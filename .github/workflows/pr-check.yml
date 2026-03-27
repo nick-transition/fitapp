@@ -27,3 +27,49 @@ jobs:
 
       - name: Build web
         run: flutter build web
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.x'
+          channel: 'stable'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Install functions dependencies
+        run: npm install --prefix functions
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Start Firebase emulators
+        run: firebase emulators:start --only auth,firestore --project fitapp-ns &
+
+      - name: Wait for emulators to be ready
+        run: npx wait-on tcp:9099 tcp:8081 --timeout 60000
+
+      - name: Seed emulator data
+        run: node scripts/seed_emulator.js
+        env:
+          FIRESTORE_EMULATOR_HOST: localhost:8081
+          FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+
+      - name: Run integration tests
+        run: flutter test integration_test/app_test.dart -d chrome
+        timeout-minutes: 10
