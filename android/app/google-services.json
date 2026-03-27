@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "742534666491",
+    "project_id": "fitapp-ns",
+    "storage_bucket": "fitapp-ns.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:742534666491:android:7e2c2d9d5571cacccaf85e",
+        "android_client_info": {
+          "package_name": "com.fitapp.fitapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "742534666491-543jbsaa39ld9g83iaqta8dee8joruic.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYIAmi6pKuJSgqWtOHedDlSvLhE4AGhTs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "742534666491-543jbsaa39ld9g83iaqta8dee8joruic.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "742534666491-hpuc7iclo3clg2ljfe1ciluf000l77hv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.fitapp.fitapp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,26 @@
+Launching lib/main.dart on Chrome in debug mode...
+Waiting for connection from debug service on Chrome...              8.8s
+
+Flutter run key commands.
+r Hot reload. 🔥🔥🔥
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+Debug service listening on ws://127.0.0.1:50765/UJwM8WQyZeU=/ws
+A Dart VM Service on Chrome is available at: http://127.0.0.1:50765/UJwM8WQyZeU=
+The Flutter DevTools debugger and profiler on Chrome is available at: http://127.0.0.1:50765/UJwM8WQyZeU=/devtools/?uri=ws://127.0.0.1:50765/UJwM8WQyZeU=/ws
+Starting application from main method in: org-dartlang-app:/web_entrypoint.dart.
+[MCPToolkit] Posted tool registration events: 3 tools, 0 resources
+WARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+EMULATORS: Connected to Auth(:9099) and Firestore(:8080)
+AUTH_STATE: connection=ConnectionState.waiting, hasData=false, uid=null
+AUTH_STATE: connection=ConnectionState.active, hasData=false, uid=null
+SIGN_IN: Initiating Google Sign-In...
+SIGN_IN: Web - Calling signInWithPopup...
+SIGN_IN: signInWithPopup CAUGHT ERROR: [firebase_auth/popup-closed-by-user] The popup has been closed by the user before finalizing the operation.
+SIGN_IN: currentUser is NULL, rethrowing...
+SIGN_IN: FINAL CATCH - Sign in failed with exception: [firebase_auth/popup-closed-by-user] The popup has been closed by the user before finalizing the operation.
+SIGN_IN: Finally resetting loading state.

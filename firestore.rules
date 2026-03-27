@@ -1,0 +1,51 @@
+rules_version='2'
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // API keys: only accessible by Cloud Functions (admin SDK bypasses rules)
+    match /apiKeys/{key} {
+      allow read, write: if false;
+    }
+
+    // OAuth Clients: users can manage their own client credentials
+    match /oauthClients/{clientId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Internal Configuration: completely hidden from all users
+    match /internalConfig/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Coach connections: invite codes and active coach-athlete links
+    match /coachConnections/{docId} {
+      // Athletes can create their own invite docs; coaches can create connection docs
+      allow create: if request.auth != null && (
+        request.resource.data.ownerUid == request.auth.uid ||
+        request.resource.data.coachUid == request.auth.uid
+      );
+
+      // Owner or coach can read their own connections
+      // Also allow reading any invite doc (needed to validate a code)
+      allow read: if request.auth != null;
+
+      // Owner can delete (revoke); coach can also delete (disconnect)
+      allow delete: if request.auth != null && (
+        resource.data.ownerUid == request.auth.uid ||
+        resource.data.coachUid == request.auth.uid
+      );
+    }
+
+    // User data: owner has full access; connected coaches get read-only access
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // Allow read if there is an active coach connection: /coachConnections/{uid}_{coachUid}
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/coachConnections/$(uid + '_' + request.auth.uid)) &&
+        get(/databases/$(database)/documents/coachConnections/$(uid + '_' + request.auth.uid)).data.status == 'active';
+    }
+  }
+}

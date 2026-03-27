@@ -1,0 +1,21 @@
+Launching lib/main.dart on Chrome in debug mode...
+Waiting for connection from debug service on Chrome...              8.7s
+
+Flutter run key commands.
+r Hot reload. 🔥🔥🔥
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+Debug service listening on ws://127.0.0.1:51873/kFhTIdoHJn4=/ws
+A Dart VM Service on Chrome is available at: http://127.0.0.1:51873/kFhTIdoHJn4=
+The Flutter DevTools debugger and profiler on Chrome is available at: http://127.0.0.1:51873/kFhTIdoHJn4=/devtools/?uri=ws://127.0.0.1:51873/kFhTIdoHJn4=/ws
+Starting application from main method in: org-dartlang-app:/web_entrypoint.dart.
+WARNING: Falling back to CPU-only rendering. Reason: webGLVersion is -1
+[MCPToolkit] Posted tool registration events: 3 tools, 0 resources
+WARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+EMULATORS: Connected to Auth(:9099) and Firestore(:8080)
+AUTH_STATE: connection=ConnectionState.waiting, hasData=false, uid=null
+AUTH_STATE: connection=ConnectionState.active, hasData=false, uid=null

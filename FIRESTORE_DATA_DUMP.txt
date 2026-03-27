@@ -1,0 +1,56 @@
+=== PLANS ===
+PATH: users/84bLLHHWtRTnqqMdHRuWiTXikNn1/plans/FzxGDbNAc1ykfQbicuU4
+Top-level keys: [
+  'programId',
+  'name',
+  'description',
+  'type',
+  'days',
+  'createdAt',
+  'updatedAt'
+]
+name: Strength & Conditioning - Week Template
+type: strength
+description: 4-day weekly template. Day 1: Lower Body, Day 2: Upper Body, Day 3: Conditioning, Day 4: Zone 2. Alw
+schedule: undefined
+programId: QY6foeceQFes0cpDkKUO
+days count: 4
+Day 0 keys: [ 'name', 'exercises' ]
+Day 0 name: Day 1: Lower Body
+Day 0 exercises count: 9
+Exercise 0 keys: [ 'name', 'sets', 'notes', 'videoUrl' ]
+Exercise 0: {"name":"Warm Up - Banded Ankle Mobility","sets":3,"notes":"2-3 rounds. 60s each side.","videoUrl":"https://youtu.be/xGji6K6tqT0?si=xCTURZBhNKoPchkM"}
+---
+
+=== SESSIONS ===
+PATH: users/84bLLHHWtRTnqqMdHRuWiTXikNn1/sessions/UPYUcIgcIr9OycqG3mSP
+Top-level keys: [
+  'planId',
+  'planName',
+  'notes',
+  'journalEntry',
+  'completedAt',
+  'startedAt'
+]
+Full data: {
+  "planId": "FzxGDbNAc1ykfQbicuU4",
+  "planName": "Strength & Conditioning - Week Template",
+  "notes": "Day 2: Upper Body. Skipped accessory circuit (Y-T-W and Face Pulls).",
+  "journalEntry": "Solid upper body session. Hit shoulder press at 75 lbs and rows at 105 lbs for superset 1. Progressed on bench from 95 to 100 lbs across sets. Pull ups done with green band assist for 8 reps. Skipped accessories today.",
+  "completedAt": {
+    "_seconds": 1773954419,
+    "_nanoseconds": 399000000
+  },
+  "startedAt": {
+    "_seconds": 1773954419,
+    "_nanoseconds": 399000000
+  }
+}
+---
+
+=== PROGRAMS ===
+PATH: users/84bLLHHWtRTnqqMdHRuWiTXikNn1/programs/QY6foeceQFes0cpDkKUO
+Top-level keys: [ 'name', 'description', 'createdAt', 'updatedAt' ]
+name: Strength & Conditioning Program
+description: 4-day program: Lower Body, Upper Body, Conditioning, and Zone 2 cardio. House Rules: 1-2 RIR on all working sets, form over load, modify ROM to stay pain-free. Aim for ~1g protein per lb bodyweight. I
+---
