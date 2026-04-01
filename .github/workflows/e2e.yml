@@ -162,7 +162,7 @@ jobs:
         run: |
           chromedriver --port=4444 &
           sleep 2
-          flutter drive \
+          xvfb-run flutter drive \
             --driver=test_driver/integration_test.dart \
             --target=integration_test/e2e_test.dart \
             --dart-define=USE_EMULATORS=true \
