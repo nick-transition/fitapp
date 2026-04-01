@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -50,10 +50,14 @@ jobs:
         run: |
           firebase emulators:start --only auth,firestore --project fitapp-ns &
           for i in $(seq 1 30); do
-            curl -s http://localhost:9099/ > /dev/null 2>&1 && break
+            if curl -s http://localhost:9099/ > /dev/null 2>&1; then
+              echo "Emulators ready"
+              exit 0
+            fi
             sleep 1
           done
-          echo "Emulators ready"
+          echo "ERROR: Emulators failed to start"
+          exit 1
 
       - name: Seed emulator data
         run: |
