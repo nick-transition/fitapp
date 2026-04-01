@@ -1,0 +1,161 @@
+name: E2E Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java (required by Firestore emulator)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.x'
+          channel: 'stable'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Install functions dependencies (for seed script)
+        run: cd functions && npm ci
+
+      - name: Install Playwright and dependencies
+        run: npm ci && npx playwright install --with-deps chromium
+
+      - name: Build web app with emulator support
+        run: flutter build web --dart-define=USE_EMULATORS=true
+
+      - name: Start Firebase emulators
+        run: |
+          firebase emulators:start --only auth,firestore --project fitapp-ns &
+          for i in $(seq 1 30); do
+            curl -s http://localhost:9099/ > /dev/null 2>&1 && break
+            sleep 1
+          done
+          echo "Emulators ready"
+
+      - name: Seed emulator data
+        run: |
+          FIRESTORE_EMULATOR_HOST=localhost:8081 \
+          FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 \
+          node scripts/seed_emulator.js
+
+      - name: Run Playwright e2e tests
+        run: npx playwright test e2e/ --reporter=list
+
+      - name: Convert videos to mp4
+        if: always()
+        run: |
+          sudo apt-get install -y ffmpeg > /dev/null 2>&1
+          mkdir -p e2e-videos
+          for f in test-results/*/video.webm; do
+            name=$(basename $(dirname "$f"))
+            ffmpeg -y -i "$f" -c:v libx264 -crf 23 -pix_fmt yuv420p \
+              "e2e-videos/${name}.mp4" 2>/dev/null || true
+          done
+          # Combine into single walkthrough
+          if ls e2e-videos/*.mp4 1>/dev/null 2>&1; then
+            for f in e2e-videos/*.mp4; do echo "file '$f'"; done > e2e-videos/concat.txt
+            ffmpeg -y -f concat -safe 0 -i e2e-videos/concat.txt \
+              -c copy e2e-videos/walkthrough.mp4 2>/dev/null || true
+            rm -f e2e-videos/concat.txt
+          fi
+
+      - name: Upload e2e artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            test-results/
+            playwright-report/
+            e2e-videos/
+          retention-days: 7
+
+      - name: Post video to PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Find screenshots from test results
+            const screenshotPaths = [];
+            const testResultsDir = 'test-results';
+            if (fs.existsSync(testResultsDir)) {
+              for (const dir of fs.readdirSync(testResultsDir)) {
+                const imgPath = path.join(testResultsDir, dir, 'test-finished-1.png');
+                const failPath = path.join(testResultsDir, dir, 'test-failed-1.png');
+                if (fs.existsSync(imgPath)) screenshotPaths.push(imgPath);
+                if (fs.existsSync(failPath)) screenshotPaths.push(failPath);
+              }
+            }
+
+            // Get the artifact URL
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            // Build the comment body
+            let body = `## E2E Test Results\n\n`;
+            body += `**Status:** ${{ job.status == 'success' && '✅ Passed' || '❌ Failed' }}\n\n`;
+            body += `📹 **[Download walkthrough video](${runUrl}#artifacts)** (see \`e2e-results\` artifact)\n\n`;
+
+            // Embed screenshots if any exist
+            if (screenshotPaths.length > 0) {
+              body += `### Screenshots\n\n`;
+              body += `Screenshots and videos are available in the [workflow artifacts](${runUrl}#artifacts).\n`;
+            }
+
+            // Find and update existing comment or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c =>
+              c.body.includes('## E2E Test Results') && c.user.type === 'Bot'
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Run Flutter integration tests
+        run: |
+          chromedriver --port=4444 &
+          sleep 2
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/e2e_test.dart \
+            --dart-define=USE_EMULATORS=true \
+            -d chrome
