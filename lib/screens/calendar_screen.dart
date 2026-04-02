@@ -277,18 +277,27 @@ class _DaySessionList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (sessions.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.event_available, size: 48, color: Colors.grey[600]),
-            const SizedBox(height: 12),
-            Text(
-              'No sessions on this day',
-              style: TextStyle(color: Colors.grey[500]),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.event_available, size: 48, color: Colors.grey[600]),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No sessions on this day',
+                      style: TextStyle(color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
+          );
+        },
       );
     }
 

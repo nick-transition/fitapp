@@ -9,6 +9,11 @@ build/
 functions/node_modules/
 functions/lib/
 
+# Node (Playwright e2e)
+node_modules/
+test-results/
+playwright-report/
+
 # IDE
 .idea/
 *.iml

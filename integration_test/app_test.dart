@@ -1,407 +1,386 @@
-// integration_test/app_test.dart
-//
-// End-to-end integration tests for FitApp.
-// Requires Firebase emulators running on localhost:9099 (auth) and localhost:8081 (firestore).
-//
-// Run locally:
-//   firebase emulators:start --only auth,firestore --project fitapp-ns &
-//   flutter test integration_test/app_test.dart -d chrome
-//
-// Or against a connected device:
-//   flutter test integration_test/app_test.dart -d <device-id>
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:fitapp/firebase_options.dart';
-import 'package:fitapp/models/workout_plan.dart';
-import 'package:fitapp/screens/home_screen.dart';
-import 'package:fitapp/widgets/plan_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:fitapp/widgets/plan_card.dart';
+import 'package:fitapp/models/workout_plan.dart';
+import 'package:fitapp/models/workout_session.dart';
 
-// ── Constants ────────────────────────────────────────────────────────────────
-
-const _testEmail = 'integration-test@fitapp.test';
-const _testPassword = 'IntegrationTest123!';
-const _planDocId = 'test-plan-e2e-001';
-const _sessionDocId = 'test-session-e2e-001';
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-/// Creates the test user on the Auth emulator (or signs in if it already exists).
-/// Returns the user's UID so Firestore documents can be scoped to it.
-Future<String> _getOrCreateTestUser() async {
-  try {
-    final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-      email: _testEmail,
-      password: _testPassword,
-    );
-    return cred.user!.uid;
-  } on FirebaseAuthException catch (e) {
-    if (e.code == 'email-already-in-use') {
-      final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _testEmail,
-        password: _testPassword,
-      );
-      return cred.user!.uid;
-    }
-    rethrow;
-  }
-}
-
-/// Seeds a 4-day workout plan into the Firestore emulator under the given UID.
-Future<void> _seedPlan(String uid) async {
-  await FirebaseFirestore.instance
-      .collection('users')
-      .doc(uid)
-      .collection('plans')
-      .doc(_planDocId)
-      .set({
-    'name': '4-Day Strength & Conditioning',
-    'description':
-        'Full-body strength block with conditioning and aerobic work.',
-    'days': [
-      {
-        'name': 'Lower Body',
-        'exercises': [
-          {
-            'name': 'Back Squat',
-            'sets': 4,
-            'reps': 6,
-            'weight': '225 lbs',
-            'notes': 'Belt up on sets 3–4',
-          },
-          {
-            'name': 'Romanian Deadlift',
-            'sets': 3,
-            'reps': 8,
-            'weight': '185 lbs',
-          },
-        ],
-      },
-      {
-        'name': 'Upper Body',
-        'exercises': [
-          {
-            'name': 'Barbell Bench Press',
-            'sets': 4,
-            'reps': 8,
-            'weight': '185 lbs',
-            'videoUrl': 'https://www.youtube.com/watch?v=vcBig73ojpE',
-          },
-          {
-            'name': 'Barbell Row',
-            'sets': 4,
-            'reps': 8,
-            'weight': '165 lbs',
-          },
-        ],
-      },
-      {
-        'name': 'Conditioning',
-        'exercises': [
-          {
-            'name': 'Kettlebell Swing',
-            'sets': 4,
-            'reps': 20,
-            'weight': '53 lbs',
-          },
-          {
-            'name': 'Box Jump',
-            'sets': 4,
-            'reps': 10,
-            'weight': 'Bodyweight',
-            'notes': '24" box',
-          },
-        ],
-      },
-      {
-        'name': 'Zone 2',
-        'exercises': [
-          {
-            'name': 'Treadmill Incline Walk',
-            'sets': 1,
-            'reps': null,
-            'notes': '3.5 mph / 8% incline — 40 min',
-          },
-        ],
-      },
-    ],
-    'createdAt': Timestamp.now(),
-    'updatedAt': Timestamp.now(),
-  });
-}
-
-/// Seeds a completed workout session plus its entries subcollection.
-Future<void> _seedSession(String uid) async {
-  final sessionRef = FirebaseFirestore.instance
-      .collection('users')
-      .doc(uid)
-      .collection('sessions')
-      .doc(_sessionDocId);
-
-  await sessionRef.set({
-    'planName': '4-Day Strength & Conditioning',
-    'dayName': 'Lower Body',
-    'startedAt': Timestamp.fromDate(
-      DateTime.now().subtract(const Duration(hours: 25)),
-    ),
-    'completedAt': Timestamp.fromDate(
-      DateTime.now().subtract(const Duration(hours: 24)),
-    ),
-    'notes': 'Felt strong today',
-    'entries': [],
-  });
-
-  // Seed entries as a subcollection — SessionCard reads these for the
-  // exercise-count chip.
-  await sessionRef.collection('entries').doc('e1').set({
-    'exerciseName': 'Back Squat',
-    'sets': [
-      {'reps': 6, 'weight': '225 lbs'}
-    ],
-    'order': 0,
-  });
-  await sessionRef.collection('entries').doc('e2').set({
-    'exerciseName': 'Romanian Deadlift',
-    'sets': [
-      {'reps': 8, 'weight': '185 lbs'}
-    ],
-    'order': 1,
-  });
-}
-
-/// Minimal MaterialApp wrapper that mirrors main.dart's theme.
-MaterialApp _testApp(Widget home) => MaterialApp(
-      title: 'FitApp',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.teal,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.black87,
-        ),
+/// Builds a [MaterialApp] with the dark teal theme matching the production app.
+Widget _appShell(Widget child) {
+  return MaterialApp(
+    title: 'FitApp',
+    theme: ThemeData(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.teal,
+        brightness: Brightness.dark,
       ),
-      home: home,
-    );
+      useMaterial3: true,
+    ),
+    home: Scaffold(body: SingleChildScrollView(child: child)),
+  );
+}
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+/// Returns the 4-day strength plan that mirrors the seed_emulator.js fixture.
+WorkoutPlan _fourDayPlan() {
+  return WorkoutPlan(
+    id: 'plan-4-day',
+    name: '4-Day Strength & Conditioning',
+    description: 'Build strength and conditioning across four training days.',
+    days: [
+      WorkoutDay(
+        name: 'Day 1: Lower Body',
+        exercises: [
+          PlanExercise(name: 'Back Squat', sets: 4, reps: 6, weight: '185 lbs'),
+          PlanExercise(name: 'Romanian Deadlift', sets: 3, reps: 10, weight: '135 lbs'),
+          PlanExercise(name: 'Leg Press', sets: 3, reps: 12, weight: '270 lbs'),
+          PlanExercise(
+            name: 'Walking Lunges',
+            sets: 3,
+            reps: 12,
+            notes: 'Each leg; use dumbbells if available',
+          ),
+          PlanExercise(name: 'Standing Calf Raise', sets: 4, reps: 15),
+        ],
+      ),
+      WorkoutDay(
+        name: 'Day 2: Upper Body',
+        exercises: [
+          PlanExercise(name: 'Barbell Bench Press', sets: 4, reps: 6, weight: '155 lbs'),
+          PlanExercise(name: 'Barbell Row', sets: 4, reps: 8, weight: '135 lbs'),
+          PlanExercise(name: 'Overhead Press', sets: 3, reps: 8, weight: '95 lbs'),
+          PlanExercise(name: 'Pull-Ups', sets: 3, reps: 8, notes: 'Add weight if bodyweight is easy'),
+          PlanExercise(name: 'Tricep Pushdown', sets: 3, reps: 12),
+          PlanExercise(name: 'Barbell Curl', sets: 3, reps: 12, weight: '65 lbs'),
+        ],
+      ),
+      WorkoutDay(
+        name: 'Day 3: Conditioning',
+        exercises: [
+          PlanExercise(name: 'Kettlebell Swing', sets: 5, reps: 20, weight: '53 lbs'),
+          PlanExercise(name: 'Box Jump', sets: 4, reps: 8),
+          PlanExercise(name: 'Battle Ropes', sets: 4, reps: 30, notes: '30 seconds per set'),
+          PlanExercise(name: 'Burpees', sets: 3, reps: 15),
+          PlanExercise(name: 'Assault Bike Sprint', sets: 6, reps: 1, notes: '30s all-out'),
+        ],
+      ),
+      WorkoutDay(
+        name: 'Day 4: Zone 2',
+        exercises: [
+          PlanExercise(name: 'Treadmill Incline Walk', sets: 1, reps: 1, notes: '45 min, 3.5 mph, 8% incline'),
+          PlanExercise(name: 'Stationary Bike', sets: 1, reps: 1, notes: '30 min at 130–140 BPM'),
+        ],
+      ),
+    ],
+  );
+}
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  String testUid = '';
+  // ───────────────────────────────────────────────────────────────
+  // Group 1: PlanCard — day headers
+  // ───────────────────────────────────────────────────────────────
+  group('PlanCard day headers (4-day plan)', () {
+    testWidgets('subtitle reflects 4 days and total exercise count',
+        (tester) async {
+      await tester.pumpWidget(_appShell(PlanCard(plan: _fourDayPlan())));
+      await tester.pumpAndSettle();
 
-  setUpAll(() async {
-    // Initialise Firebase once; guard against re-init if another test file ran
-    // first in the same process.
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
+      // 5 + 6 + 5 + 2 = 18 exercises across 4 days
+      expect(find.text('4 days · 18 exercises'), findsOneWidget);
+    });
+
+    testWidgets('day headers are hidden before expansion', (tester) async {
+      await tester.pumpWidget(_appShell(PlanCard(plan: _fourDayPlan())));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Day 1: Lower Body'), findsNothing);
+      expect(find.text('Day 2: Upper Body'), findsNothing);
+      expect(find.text('Day 3: Conditioning'), findsNothing);
+      expect(find.text('Day 4: Zone 2'), findsNothing);
+    });
+
+    testWidgets('all 4 day headers appear after tapping to expand',
+        (tester) async {
+      await tester.pumpWidget(_appShell(PlanCard(plan: _fourDayPlan())));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('4-Day Strength & Conditioning'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Day 1: Lower Body'), findsOneWidget);
+      expect(find.text('Day 2: Upper Body'), findsOneWidget);
+      expect(find.text('Day 3: Conditioning'), findsOneWidget);
+      expect(find.text('Day 4: Zone 2'), findsOneWidget);
+    });
+
+    testWidgets('plan description appears after expansion', (tester) async {
+      await tester.pumpWidget(_appShell(PlanCard(plan: _fourDayPlan())));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('4-Day Strength & Conditioning'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Build strength and conditioning across four training days.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('plan without description shows no description text',
+        (tester) async {
+      final plan = WorkoutPlan(
+        id: 'no-desc',
+        name: 'Minimal Plan',
+        days: [
+          WorkoutDay(name: 'Day 1', exercises: [
+            PlanExercise(name: 'Push-up', sets: 3, reps: 20),
+          ]),
+        ],
+      );
+
+      await tester.pumpWidget(_appShell(PlanCard(plan: plan)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Minimal Plan'));
+      await tester.pumpAndSettle();
+
+      // Description widget should be absent
+      expect(find.text('Build strength and conditioning across four training days.'),
+          findsNothing);
+    });
+
+    testWidgets('empty plan shows "No days defined" message', (tester) async {
+      final emptyPlan = WorkoutPlan(
+        id: 'empty',
+        name: 'Empty Plan',
+        days: const [],
+      );
+
+      await tester.pumpWidget(_appShell(PlanCard(plan: emptyPlan)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Empty Plan'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No days defined'), findsOneWidget);
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────
+  // Group 2: PlanCard — exercise details
+  // ───────────────────────────────────────────────────────────────
+  group('PlanCard exercise details', () {
+    testWidgets('exercises from Day 1 show name, sets×reps and weight',
+        (tester) async {
+      await tester.pumpWidget(_appShell(PlanCard(plan: _fourDayPlan())));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('4-Day Strength & Conditioning'));
+      await tester.pumpAndSettle();
+
+      // Back Squat: 4×6 @ 185 lbs
+      expect(find.textContaining('Back Squat'), findsOneWidget);
+      expect(find.textContaining('4×6'), findsOneWidget);
+      expect(find.textContaining('185 lbs'), findsOneWidget);
+
+      // Romanian Deadlift: 3×10 @ 135 lbs
+      expect(find.textContaining('Romanian Deadlift'), findsOneWidget);
+      expect(find.textContaining('3×10'), findsOneWidget);
+    });
+
+    testWidgets('exercise notes render in italics below the exercise row',
+        (tester) async {
+      await tester.pumpWidget(_appShell(PlanCard(plan: _fourDayPlan())));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('4-Day Strength & Conditioning'));
+      await tester.pumpAndSettle();
+
+      // Walking Lunges note
+      expect(
+        find.textContaining('Each leg; use dumbbells if available'),
+        findsOneWidget,
+      );
+
+      // Pull-Ups note (Day 2)
+      expect(
+        find.textContaining('Add weight if bodyweight is easy'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('exercise without notes shows no note text', (tester) async {
+      await tester.pumpWidget(_appShell(PlanCard(plan: _fourDayPlan())));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('4-Day Strength & Conditioning'));
+      await tester.pumpAndSettle();
+
+      // Leg Press has no notes; verify its name is shown but no note widget
+      expect(find.textContaining('Leg Press'), findsOneWidget);
+    });
+
+    testWidgets('exercise without reps shows em-dash placeholder',
+        (tester) async {
+      final plan = WorkoutPlan(
+        id: 'dash-plan',
+        name: 'Dash Plan',
+        days: [
+          WorkoutDay(name: 'Day 1', exercises: [
+            PlanExercise(name: 'Plank Hold', sets: 3, reps: null),
+          ]),
+        ],
+      );
+
+      await tester.pumpWidget(_appShell(PlanCard(plan: plan)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Dash Plan'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('3×—'), findsOneWidget);
+    });
+
+    testWidgets('day headers display per-day exercise counts', (tester) async {
+      await tester.pumpWidget(_appShell(PlanCard(plan: _fourDayPlan())));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('4-Day Strength & Conditioning'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('5 exercises'), findsNWidgets(2)); // Day 1 and Day 3
+      expect(find.text('6 exercises'), findsOneWidget);   // Day 2
+      expect(find.text('2 exercises'), findsOneWidget);   // Day 4
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────
+  // Group 3: WorkoutSession model — serialisation / data integrity
+  //
+  // SessionCard directly accesses FirebaseAuth and FirebaseFirestore
+  // in its build() method, requiring a live Firebase connection.
+  // These tests validate session data correctness without rendering
+  // the card, keeping the suite backend-free.
+  // ───────────────────────────────────────────────────────────────
+  group('WorkoutSession model', () {
+    WorkoutSession buildSession() {
+      final now = DateTime(2025, 6, 15, 10, 30);
+      return WorkoutSession(
+        id: 'session-001',
+        planId: 'plan-4-day',
+        planName: '4-Day Strength & Conditioning',
+        dayName: 'Day 1: Lower Body',
+        startedAt: now,
+        completedAt: now.add(const Duration(minutes: 65)),
+        entries: [
+          SessionEntry(
+            id: 'entry-0',
+            exerciseName: 'Back Squat',
+            order: 0,
+            sets: [
+              SetData(reps: 6, weight: '185 lbs'),
+              SetData(reps: 6, weight: '185 lbs'),
+              SetData(reps: 5, weight: '185 lbs'),
+              SetData(reps: 5, weight: '185 lbs'),
+            ],
+          ),
+          SessionEntry(
+            id: 'entry-1',
+            exerciseName: 'Romanian Deadlift',
+            order: 1,
+            sets: [
+              SetData(reps: 10, weight: '135 lbs'),
+              SetData(reps: 10, weight: '135 lbs'),
+              SetData(reps: 9, weight: '135 lbs'),
+            ],
+            notes: 'Focus on hip hinge',
+          ),
+          SessionEntry(
+            id: 'entry-2',
+            exerciseName: 'Leg Press',
+            order: 2,
+            sets: [
+              SetData(reps: 12, weight: '270 lbs'),
+              SetData(reps: 12, weight: '270 lbs'),
+              SetData(reps: 10, weight: '270 lbs'),
+            ],
+          ),
+        ],
       );
     }
 
-    // Point both SDKs at the local emulators.  The try/catch guards against
-    // "already configured" errors when tests are re-run in the same process.
-    try {
-      await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
-    } catch (_) {}
-    try {
-      FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8081);
-    } catch (_) {}
+    test('session reports correct exercise count via entries length', () {
+      final session = buildSession();
+      expect(session.entries.length, 3);
+    });
 
-    // Create (or sign in as) the test user and seed data under their UID.
-    testUid = await _getOrCreateTestUser();
-    await _seedPlan(testUid);
-    await _seedSession(testUid);
-  });
+    test('session.isCompleted is true when completedAt is set', () {
+      final session = buildSession();
+      expect(session.isCompleted, isTrue);
+    });
 
-  tearDownAll(() async {
-    await FirebaseAuth.instance.signOut();
-  });
+    test('session.isScheduled is false for a completed session', () {
+      final session = buildSession();
+      expect(session.isScheduled, isFalse);
+    });
 
-  // ── Group 1: Plan card day headers (Issue #1) ─────────────────────────────
-
-  group('Plan card — day headers (Issue #1)', () {
-    testWidgets(
-        'all four day names are hidden when collapsed and visible after expand',
-        (tester) async {
-      // Load the seeded plan directly from Firestore.
-      final snap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(testUid)
-          .collection('plans')
-          .doc(_planDocId)
-          .get();
-
-      final plan = WorkoutPlan.fromMap(snap.id, snap.data()!);
-
-      await tester.pumpWidget(
-        _testApp(Scaffold(body: ListView(children: [PlanCard(plan: plan)]))),
+    test('session with only scheduledAt and no completedAt is scheduled', () {
+      final future = DateTime.now().add(const Duration(days: 1));
+      final scheduled = WorkoutSession(
+        id: 'sched-001',
+        scheduledAt: future,
       );
-      await tester.pumpAndSettle();
-
-      // Collapsed state: day headers must not be visible yet.
-      expect(find.text('Lower Body'), findsNothing);
-      expect(find.text('Upper Body'), findsNothing);
-      expect(find.text('Conditioning'), findsNothing);
-      expect(find.text('Zone 2'), findsNothing);
-
-      // Expand the card by tapping the ExpansionTile header.
-      await tester.tap(find.byType(ExpansionTile));
-      await tester.pumpAndSettle();
-
-      // All four day-header labels must now be visible.
-      expect(find.text('Lower Body'), findsOneWidget);
-      expect(find.text('Upper Body'), findsOneWidget);
-      expect(find.text('Conditioning'), findsOneWidget);
-      expect(find.text('Zone 2'), findsOneWidget);
+      expect(scheduled.isScheduled, isTrue);
+      expect(scheduled.isCompleted, isFalse);
     });
 
-    testWidgets('subtitle shows correct day count and total exercise count',
-        (tester) async {
-      final snap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(testUid)
-          .collection('plans')
-          .doc(_planDocId)
-          .get();
-
-      final plan = WorkoutPlan.fromMap(snap.id, snap.data()!);
-
-      await tester.pumpWidget(
-        _testApp(Scaffold(body: ListView(children: [PlanCard(plan: plan)]))),
+    test('calendarDate prefers scheduledAt when present', () {
+      final scheduled = DateTime(2025, 7, 1);
+      final started = DateTime(2025, 7, 2);
+      final session = WorkoutSession(
+        id: 'cal-test',
+        scheduledAt: scheduled,
+        startedAt: started,
       );
-      await tester.pumpAndSettle();
-
-      // 4 days, 7 exercises total (2 + 2 + 2 + 1).
-      expect(find.textContaining('4 days'), findsOneWidget);
-      expect(find.textContaining('7 exercises'), findsOneWidget);
+      expect(session.calendarDate, equals(scheduled));
     });
-  });
 
-  // ── Group 2: Plan card exercise details ───────────────────────────────────
-
-  group('Plan card — exercise details', () {
-    testWidgets('exercise names, sets×reps, and coaching notes appear',
-        (tester) async {
-      final snap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(testUid)
-          .collection('plans')
-          .doc(_planDocId)
-          .get();
-
-      final plan = WorkoutPlan.fromMap(snap.id, snap.data()!);
-
-      await tester.pumpWidget(
-        _testApp(Scaffold(body: ListView(children: [PlanCard(plan: plan)]))),
+    test('calendarDate falls back to startedAt when scheduledAt is null', () {
+      final started = DateTime(2025, 7, 2);
+      final session = WorkoutSession(
+        id: 'cal-fallback',
+        startedAt: started,
       );
-      await tester.pumpAndSettle();
-
-      // Expand.
-      await tester.tap(find.byType(ExpansionTile));
-      await tester.pumpAndSettle();
-
-      // Exercise row: "• Back Squat  4×6 @ 225 lbs"
-      expect(find.textContaining('Back Squat'), findsOneWidget);
-      expect(find.textContaining('4×6'), findsOneWidget);
-
-      // Coaching note rendered as separate italic Text widget.
-      expect(find.text('Belt up on sets 3–4'), findsOneWidget);
-
-      // Upper Body exercise.
-      expect(find.textContaining('Barbell Bench Press'), findsOneWidget);
+      expect(session.calendarDate, equals(started));
     });
 
-    testWidgets('each day header is followed by its exercise rows',
-        (tester) async {
-      final snap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(testUid)
-          .collection('plans')
-          .doc(_planDocId)
-          .get();
+    test('toMap / fromMap round-trip preserves entry exercise names and order',
+        () {
+      final session = buildSession();
+      final map = session.toMap();
+      final restored = WorkoutSession.fromMap(session.id, map);
 
-      final plan = WorkoutPlan.fromMap(snap.id, snap.data()!);
-
-      await tester.pumpWidget(
-        _testApp(Scaffold(body: ListView(children: [PlanCard(plan: plan)]))),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byType(ExpansionTile));
-      await tester.pumpAndSettle();
-
-      // Exercises from every day must all be present.
-      expect(find.textContaining('Romanian Deadlift'), findsOneWidget);
-      expect(find.textContaining('Barbell Row'), findsOneWidget);
-      expect(find.textContaining('Kettlebell Swing'), findsOneWidget);
-      expect(find.textContaining('Treadmill Incline Walk'), findsOneWidget);
-    });
-  });
-
-  // ── Group 3: Sessions tab ─────────────────────────────────────────────────
-
-  group('Sessions tab', () {
-    testWidgets('seeded session card shows plan name', (tester) async {
-      await tester.pumpWidget(_testApp(const HomeScreen()));
-      // Allow the initial Firestore streams (Programs, Workouts) to settle.
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      // Navigate to the Sessions tab (index 3).
-      await tester.tap(find.text('Sessions'));
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      // The session card title must match the seeded plan name.
-      expect(find.textContaining('4-Day Strength'), findsOneWidget);
+      expect(restored.entries.length, 3);
+      expect(restored.entries[0].exerciseName, 'Back Squat');
+      expect(restored.entries[1].exerciseName, 'Romanian Deadlift');
+      expect(restored.entries[1].notes, 'Focus on hip hinge');
+      expect(restored.entries[2].exerciseName, 'Leg Press');
     });
 
-    testWidgets('session card shows formatted date', (tester) async {
-      await tester.pumpWidget(_testApp(const HomeScreen()));
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      await tester.tap(find.text('Sessions'));
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      // SessionCard._formatDate produces e.g. "Mar 26, 2026 at 11:00 AM".
-      // Check that at least a year string is present (stable across time zones).
-      expect(find.textContaining('202'), findsWidgets);
-    });
-  });
-
-  // ── Group 4: Coach sharing screen ────────────────────────────────────────
-
-  group('Coach sharing screen', () {
-    testWidgets('opens from app bar people icon', (tester) async {
-      await tester.pumpWidget(_testApp(const HomeScreen()));
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      // Tap the Coach Sharing icon in the HomeScreen AppBar.
-      await tester.tap(find.byIcon(Icons.people));
-      await tester.pumpAndSettle();
-
-      // AppBar title confirms we navigated to CoachScreen.
-      expect(find.text('Coach Sharing'), findsOneWidget);
+    test('SetData round-trips reps and weight correctly', () {
+      final set = SetData(reps: 8, weight: '135 lbs');
+      final map = set.toMap();
+      final restored = SetData.fromMap(map);
+      expect(restored.reps, 8);
+      expect(restored.weight, '135 lbs');
     });
 
-    testWidgets('Coach Sharing screen has Share My Data and My Athletes tabs',
-        (tester) async {
-      await tester.pumpWidget(_testApp(const HomeScreen()));
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      await tester.tap(find.byIcon(Icons.people));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Share My Data'), findsOneWidget);
-      expect(find.text('My Athletes'), findsOneWidget);
+    test('SetData without weight round-trips with null weight', () {
+      final set = SetData(reps: 15);
+      final map = set.toMap();
+      final restored = SetData.fromMap(map);
+      expect(restored.weight, isNull);
     });
   });
 }

@@ -19,18 +19,41 @@ process.env.FIREBASE_AUTH_EMULATOR_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOS
 admin.initializeApp({ projectId: 'fitapp-ns' });
 
 const db = admin.firestore();
+const auth = admin.auth();
 const ts = (d) => admin.firestore.Timestamp.fromDate(d || new Date());
 const daysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
 
 const USER_UID = 'mock-user-123';
+const COACH_UID = 'mock-coach-456';
 const PROGRAM_ID = 'prog-strength-001';
 const PLAN_ID = 'plan-4day-001';
+const WORKOUT_ID_1 = 'workout-push-001';
+const WORKOUT_ID_2 = 'workout-hiit-001';
+const SESSION_ID_1 = 'session-completed-001';
+const SESSION_ID_2 = 'session-scheduled-001';
+
+async function ensureAuthUser(uid, email, displayName, password) {
+  try {
+    await auth.getUser(uid);
+  } catch (e) {
+    if (e.code === 'auth/user-not-found') {
+      await auth.createUser({ uid, email, displayName, password });
+    } else {
+      throw e;
+    }
+  }
+}
 
 async function seed() {
+  // Create auth emulator users with deterministic UIDs
+  await ensureAuthUser(USER_UID, 'testuser@gmail.com', 'Test User', 'testpass123');
+  await ensureAuthUser(COACH_UID, 'coach@gmail.com', 'Coach User', 'coachpass123');
+  console.log('Auth users created/verified.');
+
   const batch = db.batch();
   const created = [];
 
-  // ── User ──
+  // ── Athlete User ──
   batch.set(db.collection('users').doc(USER_UID), {
     uid: USER_UID,
     displayName: 'Test User',
@@ -38,6 +61,15 @@ async function seed() {
     createdAt: ts(daysAgo(30)),
   });
   created.push(`users/${USER_UID}`);
+
+  // ── Coach User ──
+  batch.set(db.collection('users').doc(COACH_UID), {
+    uid: COACH_UID,
+    displayName: 'Coach User',
+    email: 'coach@gmail.com',
+    createdAt: ts(daysAgo(30)),
+  });
+  created.push(`users/${COACH_UID}`);
 
   // ── Program ──
   batch.set(
@@ -121,13 +153,129 @@ async function seed() {
   );
   created.push(`users/${USER_UID}/plans/${PLAN_ID}`);
 
+  // ── Workouts (linked to program) ──
+  batch.set(
+    db.collection('users').doc(USER_UID).collection('workouts').doc(WORKOUT_ID_1),
+    {
+      programId: PROGRAM_ID,
+      name: 'Push Day',
+      description: 'Chest, shoulders, and triceps compound movements',
+      type: 'strength',
+      schedule: 'Mon',
+      exercises: [
+        { name: 'Bench Press', sets: 4, reps: 8, weight: '185 lbs', order: 0, tags: ['chest'], videoUrl: 'https://www.youtube.com/watch?v=vcBig73ojpE' },
+        { name: 'Overhead Press', sets: 3, reps: 8, weight: '95 lbs', order: 1, tags: ['shoulders'] },
+        { name: 'Tricep Pushdown', sets: 3, reps: 12, weight: '50 lbs', order: 2, tags: ['triceps'] },
+      ],
+      createdAt: ts(daysAgo(10)),
+      updatedAt: ts(daysAgo(3)),
+    }
+  );
+  created.push(`users/${USER_UID}/workouts/${WORKOUT_ID_1}`);
+
+  batch.set(
+    db.collection('users').doc(USER_UID).collection('workouts').doc(WORKOUT_ID_2),
+    {
+      programId: PROGRAM_ID,
+      name: 'HIIT Cardio',
+      description: 'High intensity interval training',
+      type: 'cardio',
+      schedule: 'Wed',
+      exercises: [
+        { name: 'Burpees', sets: 4, reps: 15, order: 0, tags: ['cardio'] },
+        { name: 'Mountain Climbers', sets: 4, reps: 20, order: 1, tags: ['cardio'] },
+      ],
+      createdAt: ts(daysAgo(10)),
+      updatedAt: ts(daysAgo(4)),
+    }
+  );
+  created.push(`users/${USER_UID}/workouts/${WORKOUT_ID_2}`);
+
+  // ── Completed Session (yesterday) ──
+  const yesterday = daysAgo(1);
+  yesterday.setHours(10, 0, 0, 0);
+  const yesterdayEnd = new Date(yesterday);
+  yesterdayEnd.setMinutes(65);
+
+  batch.set(
+    db.collection('users').doc(USER_UID).collection('sessions').doc(SESSION_ID_1),
+    {
+      planId: PLAN_ID,
+      planName: '4-Day Strength & Conditioning',
+      dayName: 'Lower Body',
+      startedAt: ts(yesterday),
+      completedAt: ts(yesterdayEnd),
+      notes: 'Felt strong today, upped squat weight',
+      entries: [
+        {
+          exerciseName: 'Back Squat',
+          order: 0,
+          sets: [
+            { reps: 6, weight: '225 lbs' },
+            { reps: 6, weight: '225 lbs' },
+            { reps: 5, weight: '225 lbs' },
+            { reps: 5, weight: '225 lbs' },
+          ],
+        },
+        {
+          exerciseName: 'Romanian Deadlift',
+          order: 1,
+          sets: [
+            { reps: 8, weight: '185 lbs' },
+            { reps: 8, weight: '185 lbs' },
+            { reps: 7, weight: '185 lbs' },
+          ],
+          notes: 'Focus on hip hinge',
+        },
+      ],
+    }
+  );
+  created.push(`users/${USER_UID}/sessions/${SESSION_ID_1}`);
+
+  // ── Scheduled Session (tomorrow) ──
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(9, 0, 0, 0);
+
+  batch.set(
+    db.collection('users').doc(USER_UID).collection('sessions').doc(SESSION_ID_2),
+    {
+      planId: PLAN_ID,
+      planName: '4-Day Strength & Conditioning',
+      dayName: 'Upper Body',
+      scheduledAt: ts(tomorrow),
+    }
+  );
+  created.push(`users/${USER_UID}/sessions/${SESSION_ID_2}`);
+
+  // ── Coach Connection (active) ──
+  const connectionId = `${USER_UID}_${COACH_UID}`;
+  batch.set(
+    db.collection('coachConnections').doc(connectionId),
+    {
+      ownerUid: USER_UID,
+      ownerName: 'Test User',
+      coachUid: COACH_UID,
+      coachName: 'Coach User',
+      type: 'connection',
+      status: 'active',
+      createdAt: ts(daysAgo(7)),
+      connectedAt: ts(daysAgo(7)),
+    }
+  );
+  created.push(`coachConnections/${connectionId}`);
+
   await batch.commit();
 
   console.log('\n✅ Seed complete! Created:\n');
   for (const path of created) console.log(`  /${path}`);
-  console.log(`\nUser UID: ${USER_UID}`);
+  console.log(`\nAthlete UID: ${USER_UID}`);
+  console.log(`Coach UID:   ${COACH_UID}`);
   console.log(`Plan: "${plan.name}" with 4 days:`);
   plan.days.forEach((d, i) => console.log(`  Day ${i + 1}: ${d.name} (${d.exercises.length} exercises)`));
+  console.log(`Workouts: Push Day (3 exercises), HIIT Cardio (2 exercises)`);
+  console.log(`Sessions: 1 completed (yesterday), 1 scheduled (tomorrow)`);
+  console.log(`Coach connection: ${USER_UID} ↔ ${COACH_UID} (active)`);
   console.log();
 }
 
