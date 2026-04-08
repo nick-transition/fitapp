@@ -84,16 +84,24 @@ test('Coach e2e walkthrough', async ({ page }) => {
   await clickAt(page, 1139, 28);
   await page.waitForTimeout(3000);
 
-  // My Athletes tab (second tab)
-  await clickAt(page, 350, 90);
+  // My Athletes tab (right side of tab bar)
+  await clickAt(page, 957, 90);
   await page.waitForTimeout(3000);
 
   // Click "Test User" athlete card
-  await clickAt(page, 400, 250);
+  await clickAt(page, 400, 390);
+  await page.waitForTimeout(3000);
+
+  // Expand "4-Day Strength & Conditioning" program
+  await clickAt(page, 400, 178);
+  await page.waitForTimeout(3000);
+
+  // Expand "Push Day" workout to show exercises with inline video tile
+  await clickAt(page, 400, 310);
   await page.waitForTimeout(3000);
 
   // Sessions tab on athlete detail
-  await clickAt(page, 340, 90);
+  await clickAt(page, 1063, 90);
   await page.waitForTimeout(3000);
 
   await signOut(page);

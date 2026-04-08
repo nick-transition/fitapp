@@ -1,11 +1,10 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../models/workout_program.dart';
 import '../models/workout.dart';
 import '../models/workout_session.dart';
 import '../widgets/workout_card.dart';
+import '../widgets/video_player.dart';
 
 class AthleteDetailScreen extends StatelessWidget {
   final String athleteUid;
@@ -178,15 +177,6 @@ class _AthleteExerciseRow extends StatelessWidget {
   final dynamic ex;
   const _AthleteExerciseRow({required this.ex});
 
-  Future<void> _launchVideo(String url) async {
-    final uri = Uri.parse(url);
-    await launchUrl(
-      uri,
-      mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
-      webOnlyWindowName: '_blank',
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -198,41 +188,15 @@ class _AthleteExerciseRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '• ${ex.name}  ${ex.sets}×${ex.reps ?? '—'}${ex.weight != null ? ' @ ${ex.weight}' : ''}',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ),
-              if (hasVideo)
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () => _launchVideo(ex.videoUrl as String),
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.play_circle_outline, size: 16, color: Colors.blue[700]),
-                          const SizedBox(width: 2),
-                          Text(
-                            'Video',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.blue[700],
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+          Text(
+            '• ${ex.name}  ${ex.sets}×${ex.reps ?? '—'}${ex.weight != null ? ' @ ${ex.weight}' : ''}',
+            style: theme.textTheme.bodySmall,
           ),
+          if (hasVideo)
+            VideoLinkTile(
+              url: ex.videoUrl as String,
+              title: 'Reference: ${ex.name}',
+            ),
           if (hasNotes)
             Padding(
               padding: const EdgeInsets.only(left: 10, top: 2),
