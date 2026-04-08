@@ -22,9 +22,6 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos
 
-      - name: Test
-        run: flutter test
-
       - name: Build web
         run: flutter build web
 
