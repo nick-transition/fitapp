@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'exercise.dart';
 
 class SetData {
   final int reps;

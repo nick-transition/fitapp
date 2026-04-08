@@ -5,7 +5,7 @@ import 'package:fitapp/models/workout_session.dart';
 import 'package:fitapp/models/exercise.dart';
 import 'package:fitapp/widgets/workout_card.dart';
 import 'package:fitapp/widgets/session_card.dart';
-import 'package:fitapp/widgets/exercise_card.dart';
+
 
 // ---------------------------------------------------------------------------
 // Test data

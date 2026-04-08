@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout.dart';
 import '../models/exercise.dart';
-import '../models/workout_program.dart';
 import '../utils/youtube_utils.dart';
 
 class WorkoutEditScreen extends StatefulWidget {

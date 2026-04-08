@@ -61,7 +61,6 @@ class _ApiTokenScreenState extends State<ApiTokenScreen> {
       if (uid == null) throw 'Not authenticated';
 
       // Generate random client ID and Secret
-      final random = Random.secure();
       final clientId = 'cl-${_randomString(12)}';
       final secret = 'sk-${_randomString(32)}';
 
