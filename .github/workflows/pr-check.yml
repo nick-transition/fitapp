@@ -13,7 +13,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.x'
+          flutter-version: '3.41.x'
           channel: 'stable'
 
       - name: Install dependencies
@@ -36,7 +36,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.x'
+          flutter-version: '3.41.x'
           channel: 'stable'
 
       - name: Setup Node.js
