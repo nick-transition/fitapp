@@ -156,6 +156,23 @@ void main() {
     expect(find.text('4-Day Strength & Conditioning'), findsOneWidget);
     await hold(tester);
 
+    // 4b. Expand program → workouts load
+    await tester.tap(find.text('4-Day Strength & Conditioning'));
+    await tester.pumpAndSettle();
+    expect(find.text('Push Day'), findsOneWidget);
+    await hold(tester);
+
+    // 4c. Expand Push Day → exercises with inline video tile
+    await tester.tap(find.text('Push Day'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Bench Press'), findsWidgets);
+    expect(find.text('Watch reference video'), findsOneWidget);
+    await hold(tester);
+
+    // 4d. On web, video auto-expands — verify subtitle shows "Reference video"
+    expect(find.text('Reference video'), findsOneWidget);
+    await hold(tester);
+
     // 5. Athlete Workouts tab
     await tester.tap(find.text('Workouts'));
     await tester.pumpAndSettle();

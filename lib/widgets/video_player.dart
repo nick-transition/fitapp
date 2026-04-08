@@ -19,12 +19,46 @@ class VideoLinkTileState extends State<VideoLinkTile> {
   YoutubePlayerController? _controller;
 
   @override
+  void initState() {
+    super.initState();
+    // Auto-expand on web — ListTile.onTap doesn't receive pointer events
+    // reliably inside CanvasKit scrollable containers (flutter/flutter#54027).
+    // On web we use a raw iframe via HtmlElementView, no controller needed.
+    if (kIsWeb && _videoId != null) {
+      _isExpanded = true;
+    }
+  }
+
+  String? get _videoId {
+    final urlStr = widget.url;
+    if (urlStr == null || urlStr.isEmpty) return null;
+    return YouTubeUtils.getYouTubeId(urlStr);
+  }
+
+  YoutubePlayerController _createController(String videoId) {
+    return YoutubePlayerController.fromVideoId(
+      videoId: videoId,
+      params: const YoutubePlayerParams(
+        showControls: true,
+        showFullscreenButton: true,
+        mute: false,
+        showVideoAnnotations: false,
+      ),
+    );
+  }
+
+  @override
   void didUpdateWidget(VideoLinkTile oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.url != oldWidget.url) {
       _controller?.close();
       _controller = null;
-      _isExpanded = false;
+      final videoId = _videoId;
+      if (kIsWeb && videoId != null) {
+        _isExpanded = true;
+      } else {
+        _isExpanded = false;
+      }
     }
   }
 
@@ -64,15 +98,7 @@ class VideoLinkTileState extends State<VideoLinkTile> {
     setState(() {
       _isExpanded = !_isExpanded;
       if (_isExpanded && _controller == null) {
-        _controller = YoutubePlayerController.fromVideoId(
-          videoId: videoId,
-          params: const YoutubePlayerParams(
-            showControls: true,
-            showFullscreenButton: true,
-            mute: false,
-            showVideoAnnotations: false,
-          ),
-        );
+        _controller = _createController(videoId);
       }
     });
   }
@@ -95,7 +121,7 @@ class VideoLinkTileState extends State<VideoLinkTile> {
           title: Text(widget.title, style: const TextStyle(fontSize: 14)),
           subtitle: Text(
             videoId != null
-              ? (_isExpanded ? 'Tap to hide video' : 'Watch reference video')
+              ? (_isExpanded ? (kIsWeb ? 'Reference video' : 'Tap to hide video') : 'Watch reference video')
               : 'Open link',
             style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
@@ -116,6 +142,10 @@ class VideoLinkTileState extends State<VideoLinkTile> {
   }
 
   Widget _buildPlayer() {
+    if (kIsWeb) {
+      return _buildWebPlayer();
+    }
+
     final ctrl = _controller;
     if (ctrl == null) return const SizedBox.shrink();
 
@@ -123,24 +153,50 @@ class VideoLinkTileState extends State<VideoLinkTile> {
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       child: Column(
         children: [
-          // On Web, complex clipping can cause blank screens in some renderers.
-          // We use a simpler container for Web.
-          kIsWeb
-              ? AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: YoutubePlayer(
-                    controller: ctrl,
-                  ),
-                )
-              : ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: YoutubePlayer(
-                      controller: ctrl,
-                    ),
-                  ),
-                ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: YoutubePlayer(controller: ctrl),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: _launchUrl,
+                icon: const Icon(Icons.open_in_new, size: 14),
+                label: const Text('Open in YouTube', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebPlayer() {
+    final videoId = _videoId;
+    if (videoId == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: Column(
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: HtmlElementView.fromTagName(
+              tagName: 'iframe',
+              onElementCreated: (Object element) {
+                // element is a web Element; use dynamic to call setAttribute
+                final el = element as dynamic;
+                el.setAttribute('src', 'https://www.youtube.com/embed/$videoId?autoplay=0&rel=0');
+                el.setAttribute('style', 'border:none;width:100%;height:100%');
+                el.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+                el.setAttribute('allowfullscreen', 'true');
+              },
+            ),
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
