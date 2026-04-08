@@ -5,7 +5,7 @@ import 'package:fitapp/models/workout_session.dart';
 import 'package:fitapp/models/exercise.dart';
 import 'package:fitapp/widgets/workout_card.dart';
 import 'package:fitapp/widgets/session_card.dart';
-import 'package:fitapp/widgets/exercise_card.dart';
+
 
 // ---------------------------------------------------------------------------
 // Test data
@@ -48,7 +48,7 @@ final _pushDayExercises = [
     name: 'Bench Press',
     sets: 4,
     reps: 8,
-    weight: 80,
+    weight: '80 lbs',
     order: 0,
   ),
   Exercise(
@@ -56,7 +56,7 @@ final _pushDayExercises = [
     name: 'Shoulder Press',
     sets: 3,
     reps: 10,
-    weight: 40,
+    weight: '40 lbs',
     order: 1,
   ),
   Exercise(
@@ -64,7 +64,7 @@ final _pushDayExercises = [
     name: 'Tricep Pushdown',
     sets: 3,
     reps: 12,
-    weight: 25,
+    weight: '25 lbs',
     order: 2,
   ),
 ];
