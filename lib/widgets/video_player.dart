@@ -21,6 +21,12 @@ class VideoLinkTileState extends State<VideoLinkTile> {
   @override
   void initState() {
     super.initState();
+    // Auto-expand on web — ListTile.onTap doesn't receive pointer events
+    // reliably inside CanvasKit scrollable containers (flutter/flutter#54027).
+    // On web we use a raw iframe via HtmlElementView, no controller needed.
+    if (kIsWeb && _videoId != null) {
+      _isExpanded = true;
+    }
   }
 
   String? get _videoId {
@@ -47,7 +53,12 @@ class VideoLinkTileState extends State<VideoLinkTile> {
     if (widget.url != oldWidget.url) {
       _controller?.close();
       _controller = null;
-      _isExpanded = false;
+      final videoId = _videoId;
+      if (kIsWeb && videoId != null) {
+        _isExpanded = true;
+      } else {
+        _isExpanded = false;
+      }
     }
   }
 
