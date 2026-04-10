@@ -38,6 +38,12 @@ service cloud.firestore {
       );
     }
 
+    // Waitlist: unauthenticated users can submit their email; reads are blocked
+    match /waitlist/{email} {
+      allow create: if true;
+      allow read, update, delete: if false;
+    }
+
     // User data: owner has full access; connected coaches get read-only access
     match /users/{uid}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
