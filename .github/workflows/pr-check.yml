@@ -73,6 +73,9 @@ jobs:
           FIRESTORE_EMULATOR_HOST: localhost:8081
           FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
 
+      - name: Start ChromeDriver
+        run: chromedriver --port=4444 &
+
       - name: Run integration tests
-        run: flutter test integration_test/app_test.dart -d chrome
+        run: flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart -d chrome
         timeout-minutes: 10
