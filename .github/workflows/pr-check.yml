@@ -55,6 +55,12 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Start Firebase emulators
         run: firebase emulators:start --only auth,firestore --project fitapp-ns &
 
