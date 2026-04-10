@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../widgets/marketing_nav.dart';
 
 class OpenSourceScreen extends StatelessWidget {
@@ -48,7 +49,7 @@ class OpenSourceScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       FilledButton.icon(
-                        onPressed: () {},
+                        onPressed: () => launchUrl(Uri.parse('https://github.com/nick-transition/fitapp')),
                         icon: const Icon(Icons.open_in_new, size: 18),
                         label: const Text('View on GitHub'),
                         style: FilledButton.styleFrom(
@@ -186,7 +187,7 @@ class OpenSourceScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: () => launchUrl(Uri.parse('https://github.com/nick-transition/fitapp/issues')),
                     icon: const Icon(Icons.open_in_new, size: 18),
                     label: const Text('Browse Open Issues on GitHub'),
                     style: OutlinedButton.styleFrom(
