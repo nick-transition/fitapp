@@ -76,6 +76,9 @@ jobs:
       - name: Start ChromeDriver
         run: chromedriver --port=4444 &
 
+      - name: Install Xvfb
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
       - name: Run integration tests
-        run: flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart -d chrome
+        run: xvfb-run flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart -d chrome
         timeout-minutes: 10
