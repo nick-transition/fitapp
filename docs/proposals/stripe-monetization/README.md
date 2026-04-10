@@ -100,6 +100,63 @@ Free tier: increment `users/{uid}/usage/{today}` counter, reject if > 5.
 
 ---
 
+## Comparable Projects & Market Context
+
+### Fitness App Landscape
+The fitness app market is $13.9B in 2026, growing at 13.4% CAGR to $33.6B by 2033. The dominant model is subscription-based with coaching tiers. Key comparables:
+
+**Strava** — The closest analog to FitApp's social/coaching model. 40%+ of revenue from premium subscriptions. Free tier with activity tracking, paid tier ($5.99/mo) for advanced analytics, route building, and training plans. Strava's moat is its social network — FitApp's moat would be the AI coaching layer.
+
+**Trainerize** — Coach-to-athlete platform. Coaches pay $5-$200/mo to manage clients, set programs, and track progress. Revenue model is B2B (coaches pay) not B2C. FitApp could combine both: athletes pay for AI features, coaches pay for marketplace access.
+
+**wger** (github.com/wger-project/wger) — The most direct open-source comparable. Self-hosted FLOSS fitness/workout/nutrition tracker with 35K+ users and 500+ exercises. Licensed AGPL 3+. Funded entirely by donations — no revenue model. This is exactly the gap FitApp fills: open source fitness tracking with a sustainable business model on top.
+
+**Future.co** — Premium AI + human coaching at $199/mo. Demonstrates willingness to pay for AI coaching features at premium price points. FitApp at $9.99/mo would be 20x cheaper.
+
+### AI Agent Marketplace Comparables
+
+**Virtuals Protocol** (virtuals.io) — Decentralized platform on Base for creating, deploying, and monetizing AI agents. Tokenizes agents and enables co-ownership + revenue sharing. Relevant pattern: FitApp coaches could "own" their AI coaching agent (trained on their methodology) and earn revenue from users who train with it.
+
+**OpenAI GPT Store** — Marketplace where creators publish custom GPTs and earn based on usage. Revenue share model (though specifics have been controversial). Directly analogous to FitApp's coach marketplace: coaches publish program templates, users access them via AI.
+
+---
+
+## Open Source Strategy
+
+### License
+AGPL-3.0 — same as wger. This ensures the codebase stays open while requiring anyone who hosts a modified version to share their changes. The AGPL's network clause is key: if someone forks FitApp and runs it as a service, they must open-source their modifications.
+
+### Revenue Protocol
+Inspired by three existing open-source funding mechanisms:
+
+**tea.xyz** — A permissionless protocol that rewards open-source contributors via cryptographic signatures. Uses "Proof of Contribution" to score projects and distribute TEA tokens. Relevant for tracking contributor impact.
+
+**Drips Protocol** (drips.network) — Ethereum-based protocol enabling organizations to fund OSS dependencies. ENS streamed $50K USDC over 6 months to 7 projects. Relevant model for FitApp's infrastructure: subscription revenue streams to contributors via Drips.
+
+**Open Collective** — Traditional (non-crypto) fiscal hosting for open-source projects. Transparent budgets, expense tracking, contributor payouts. Could serve as Phase 1 before moving to on-chain.
+
+### Proposed Revenue Split
+
+| Recipient | Share | Mechanism |
+|-----------|-------|-----------|
+| Founder/Core Team | 40% | Direct Stripe payout |
+| Contributor Pool | 25% | Drips or Open Collective, weighted by contribution |
+| Infrastructure/Hosting | 15% | Automated via GCP billing |
+| Coach Revenue Share | 20% | Stripe Connect (from marketplace sales only) |
+
+### Contribution Tracking
+- Phase 1: Manual allocation based on PRs merged, issues closed, features shipped
+- Phase 2: Automated via GitHub API integration — weight by lines changed, review activity, issue resolution
+- Phase 3: On-chain via tea.xyz-style Proof of Contribution or custom smart contract on Base
+
+### Why Open Source?
+1. **Trust**: Users trust open-source fitness apps with their health data more than closed-source alternatives
+2. **Contributions**: Community contributions accelerate development (wger has 100+ contributors)
+3. **Moat**: The AI coaching layer and marketplace are the moat, not the codebase. Open-sourcing the tracker doesn't give away the competitive advantage
+4. **Alignment**: Protocol-style companies align contributor incentives with company growth
+
+---
+
 ## Open Questions
 
 1. **Free tier Claude access?** Should free tier have Claude/MCP access at all (limited), or is the free tier app-only (no AI)?
