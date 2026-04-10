@@ -12,6 +12,7 @@ import { resolveUser } from './auth.js';
 import { handleToolCall, toolDefinitions } from './tools/index.js';
 import { handleOAuthRequest, FIREBASE_API_KEY } from './oauth.js';
 import { promptDefinitions, getPrompt } from './prompts.js';
+export { createCheckoutSession, handleStripeWebhook, createPortalSession } from './stripe.js';
 
 admin.initializeApp();
 
