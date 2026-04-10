@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../screens/faq_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/marketing_screen.dart';
+import '../screens/open_source_screen.dart';
 
 class MarketingNav extends StatelessWidget implements PreferredSizeWidget {
   final bool showHome;
@@ -64,6 +65,11 @@ class MarketingNav extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
+        TextButton(
+          onPressed: () =>
+              _navigate(context, const OpenSourceScreen()),
+          child: const Text('Open Source'),
+        ),
         if (showFaq)
           TextButton(
             onPressed: () =>
