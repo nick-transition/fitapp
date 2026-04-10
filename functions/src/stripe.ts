@@ -21,8 +21,8 @@ function getStripe(): InstanceType<typeof Stripe> {
 // Override via environment if needed.
 const PRICE_IDS: Record<SubscriptionTier, string | null> = {
   free: null,
-  pro: process.env.STRIPE_PRO_PRICE_ID || 'price_pro_placeholder',
-  coach: process.env.STRIPE_COACH_PRICE_ID || 'price_coach_placeholder',
+  pro: process.env.STRIPE_PRO_PRICE_ID || 'price_1TKcyWPtbwp1t4mSEwScBDRT',
+  coach: process.env.STRIPE_COACH_PRICE_ID || 'price_1TKcyWPtbwp1t4mScl7d3fyz',
 };
 
 /**
