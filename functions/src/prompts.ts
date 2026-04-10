@@ -30,8 +30,8 @@ Follow these steps exactly:
 2. Once I approve the program name, use the 'create_workout_program' tool to create it.
 3. Next, propose a workout split (e.g., a 3-day or 4-day plan) that fits this program.
 4. For each day in the plan, suggest specific exercises with:
-   - sets (number), reps (number, optional), weight (string like "135 lbs" or "bodyweight", optional)
-   - notes: important coaching cues, rep ranges, rest times, RIR targets, form tips (put these in the notes field, not the name)
+   - sets (number), reps (number, optional), weight (string like "135 lbs", "bodyweight", "medium-light working weight", "RPE 7" — never a bare number, optional)
+   - notes: important coaching cues, rep ranges, rest times, RIR targets, form tips, warm-up instructions (put ALL of these in the notes field, NOT in the exercise name)
    - videoUrl: YouTube reference links for complex movements (optional)
 5. Ask me which days of the week I want to do each workout (e.g., "Monday", "Wednesday", "Friday").
 6. Once I approve the plan details, use the 'create_workout_plan' tool to save it with:
