@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../widgets/marketing_nav.dart';
 
@@ -250,6 +251,11 @@ class OpenSourceScreen extends StatelessWidget {
                 ],
               ),
             ),
+
+            const Divider(height: 1),
+
+            // Email capture section
+            const _EmailCaptureSection(),
 
             const Divider(height: 1),
 
@@ -592,6 +598,145 @@ class _ProtocolCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _EmailCaptureSection extends StatefulWidget {
+  const _EmailCaptureSection();
+
+  @override
+  State<_EmailCaptureSection> createState() => _EmailCaptureSectionState();
+}
+
+class _EmailCaptureSectionState extends State<_EmailCaptureSection> {
+  final _controller = TextEditingController();
+  bool _loading = false;
+  bool _submitted = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _subscribe() async {
+    final email = _controller.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _error = 'Enter a valid email address.');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await FirebaseFirestore.instance
+          .collection('waitlist')
+          .doc(email)
+          .set({'email': email, 'source': 'open_source_page', 'createdAt': FieldValue.serverTimestamp()});
+      if (mounted) setState(() => _submitted = true);
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Something went wrong. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+      child: Column(
+        children: [
+          Text(
+            'Join the Community',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Get notified about contributor opportunities, coach program launches, and protocol updates.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          if (_submitted)
+            Card(
+              color: const Color(0xFF10B981).withOpacity(0.12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check_circle, color: Color(0xFF10B981)),
+                    const SizedBox(width: 8),
+                    Text(
+                      "You're on the list!",
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF10B981),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: _controller,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      hintText: 'you@example.com',
+                      errorText: _error,
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    onSubmitted: (_) => _subscribe(),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: _loading ? null : _subscribe,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _loading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('Subscribe'),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
