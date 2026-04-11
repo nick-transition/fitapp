@@ -41,6 +41,11 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
@@ -55,11 +60,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-
-      - name: Setup Chrome
-        uses: browser-actions/setup-chrome@v1
-        with:
-          chrome-version: stable
 
       - name: Start Firebase emulators
         run: firebase emulators:start --only auth,firestore --project fitapp-ns &
