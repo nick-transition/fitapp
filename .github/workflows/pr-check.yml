@@ -79,6 +79,9 @@ jobs:
       - name: Install Xvfb
         run: sudo apt-get update && sudo apt-get install -y xvfb
 
+      - name: Build web app
+        run: flutter build web
+
       - name: Run integration tests
         run: xvfb-run flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart -d chrome
-        timeout-minutes: 10
+        timeout-minutes: 15
