@@ -181,7 +181,7 @@ void main() {
 
       // Back Squat: 4×6 @ 185 lbs
       expect(find.textContaining('Back Squat'), findsOneWidget);
-      expect(find.textContaining('4×6'), findsOneWidget);
+      expect(find.textContaining('Back Squat 4×6'), findsOneWidget);
       expect(find.textContaining('185 lbs'), findsOneWidget);
 
       // Romanian Deadlift: 3×10 @ 135 lbs
