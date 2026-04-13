@@ -13,17 +13,29 @@ type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trialing';
 // SubscriptionStatusRaw matches the Stripe SDK's Subscription.Status literal union
 type StripeSubscriptionStatus = 'active' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'paused' | 'trialing' | 'unpaid';
 
+// Stripe mode is determined by the secret key prefix (sk_test_ vs sk_live_).
+// Price IDs differ between test and live mode — configure both sets.
+const isTestMode = (): boolean => STRIPE_SECRET_KEY.value().startsWith('sk_test_');
+
+const PRICE_IDS_LIVE: Record<SubscriptionTier, string | null> = {
+  free: null,
+  pro: process.env.STRIPE_PRO_PRICE_ID_LIVE || 'price_1TKcyWPtbwp1t4mSEwScBDRT',
+  coach: process.env.STRIPE_COACH_PRICE_ID_LIVE || 'price_1TKcyWPtbwp1t4mScl7d3fyz',
+};
+
+const PRICE_IDS_TEST: Record<SubscriptionTier, string | null> = {
+  free: null,
+  pro: process.env.STRIPE_PRO_PRICE_ID_TEST || null,
+  coach: process.env.STRIPE_COACH_PRICE_ID_TEST || null,
+};
+
+function getPriceIds(): Record<SubscriptionTier, string | null> {
+  return isTestMode() ? PRICE_IDS_TEST : PRICE_IDS_LIVE;
+}
+
 function getStripe(): InstanceType<typeof Stripe> {
   return new Stripe(STRIPE_SECRET_KEY.value(), { apiVersion: '2026-03-25.dahlia' });
 }
-
-// Price IDs should be set in Stripe dashboard and referenced here.
-// Override via environment if needed.
-const PRICE_IDS: Record<SubscriptionTier, string | null> = {
-  free: null,
-  pro: process.env.STRIPE_PRO_PRICE_ID || 'price_1TKcyWPtbwp1t4mSEwScBDRT',
-  coach: process.env.STRIPE_COACH_PRICE_ID || 'price_1TKcyWPtbwp1t4mScl7d3fyz',
-};
 
 /**
  * Creates a Stripe Checkout session for subscription signup.
@@ -63,9 +75,16 @@ export const createCheckoutSession = onRequest(
         return;
       }
 
-      const priceId = PRICE_IDS[tier];
+      const priceIds = getPriceIds();
+      const priceId = priceIds[tier];
       if (!priceId) {
-        res.status(400).json({ error: `No price configured for tier: ${tier}` });
+        const mode = isTestMode() ? 'test' : 'live';
+        res.status(400).json({
+          error: `No price configured for tier "${tier}" in ${mode} mode. `
+            + (isTestMode()
+              ? 'Set STRIPE_PRO_PRICE_ID_TEST / STRIPE_COACH_PRICE_ID_TEST env vars.'
+              : 'Check PRICE_IDS_LIVE in stripe.ts.'),
+        });
         return;
       }
 
@@ -355,7 +374,8 @@ function mapStripeStatus(status: StripeSubscriptionStatus): SubscriptionStatus {
 }
 
 function tierFromPriceId(priceId: string | undefined): SubscriptionTier {
-  if (priceId === PRICE_IDS.coach) return 'coach';
-  if (priceId === PRICE_IDS.pro) return 'pro';
+  const priceIds = getPriceIds();
+  if (priceId === priceIds.coach) return 'coach';
+  if (priceId === priceIds.pro) return 'pro';
   return 'pro';
 }
