@@ -40,6 +40,7 @@ dependencies:
   google_sign_in: ^6.2.1
   mcp_toolkit: ^0.4.0
   url_launcher: ^6.3.2
+  http: ^1.2.0
   youtube_player_iframe: ^5.2.2
 
 dev_dependencies:

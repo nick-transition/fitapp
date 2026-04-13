@@ -20,7 +20,7 @@ Future<void> _connectEmulators() async {
 }
 
 void main() {
-  if (kDebugMode || kIsWeb) {
+  if (kDebugMode) {
     runZonedGuarded(
       () async {
         WidgetsFlutterBinding.ensureInitialized();
@@ -50,6 +50,7 @@ Future<void> _startApp() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  if (_useEmulators) await _connectEmulators();
   runApp(const MyApp());
 }
 
@@ -96,7 +97,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       builder: (context, snapshot) {
         final user = snapshot.data;
 
-        if (kDebugMode || kIsWeb) {
+        if (kDebugMode) {
           print('AUTH_STATE: connection=${snapshot.connectionState}, hasData=${snapshot.hasData}, uid=${user?.uid}');
         }
 
