@@ -50,6 +50,7 @@ Future<void> _startApp() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  if (_useEmulators) await _connectEmulators();
   runApp(const MyApp());
 }
 

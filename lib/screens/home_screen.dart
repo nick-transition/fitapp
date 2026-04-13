@@ -11,6 +11,7 @@ import 'coach_screen.dart';
 import '../models/workout_program.dart';
 import 'program_edit_screen.dart';
 import 'faq_screen.dart';
+import 'subscription_screen.dart';
 import 'workout_edit_screen.dart';
 import 'session_edit_screen.dart';
 
@@ -27,6 +28,14 @@ class HomeScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('FitApp'),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.card_membership),
+              tooltip: 'Subscription',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+              ),
+            ),
             IconButton(
               icon: const Icon(Icons.people),
               tooltip: 'Coach Sharing',
