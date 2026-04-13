@@ -20,7 +20,7 @@ Future<void> _connectEmulators() async {
 }
 
 void main() {
-  if (kDebugMode || kIsWeb) {
+  if (kDebugMode) {
     runZonedGuarded(
       () async {
         WidgetsFlutterBinding.ensureInitialized();
@@ -96,7 +96,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       builder: (context, snapshot) {
         final user = snapshot.data;
 
-        if (kDebugMode || kIsWeb) {
+        if (kDebugMode) {
           print('AUTH_STATE: connection=${snapshot.connectionState}, hasData=${snapshot.hasData}, uid=${user?.uid}');
         }
 
