@@ -17,16 +17,16 @@ type StripeSubscriptionStatus = 'active' | 'canceled' | 'incomplete' | 'incomple
 // Price IDs differ between test and live mode — configure both sets.
 const isTestMode = (): boolean => STRIPE_SECRET_KEY.value().startsWith('sk_test_');
 
-const PRICE_IDS_LIVE: Record<SubscriptionTier, string | null> = {
-  free: null,
-  pro: process.env.STRIPE_PRO_PRICE_ID_LIVE || 'price_1TKcyWPtbwp1t4mSEwScBDRT',
-  coach: process.env.STRIPE_COACH_PRICE_ID_LIVE || 'price_1TKcyWPtbwp1t4mScl7d3fyz',
-};
-
 const PRICE_IDS_TEST: Record<SubscriptionTier, string | null> = {
   free: null,
-  pro: process.env.STRIPE_PRO_PRICE_ID_TEST || null,
-  coach: process.env.STRIPE_COACH_PRICE_ID_TEST || null,
+  pro: process.env.STRIPE_PRO_PRICE_ID_TEST || 'price_1TKcyWPtbwp1t4mSEwScBDRT',   // $9.99/mo
+  coach: process.env.STRIPE_COACH_PRICE_ID_TEST || 'price_1TKcyWPtbwp1t4mScl7d3fyz', // $29.99/mo
+};
+
+const PRICE_IDS_LIVE: Record<SubscriptionTier, string | null> = {
+  free: null,
+  pro: process.env.STRIPE_PRO_PRICE_ID_LIVE || 'price_1TLYZ2Q3zUu0EIKvJYP1vuei',   // $9.99/mo
+  coach: process.env.STRIPE_COACH_PRICE_ID_LIVE || 'price_1TLYZYQ3zUu0EIKvS79urawK', // $29.99/mo
 };
 
 function getPriceIds(): Record<SubscriptionTier, string | null> {
@@ -83,7 +83,7 @@ export const createCheckoutSession = onRequest(
           error: `No price configured for tier "${tier}" in ${mode} mode. `
             + (isTestMode()
               ? 'Set STRIPE_PRO_PRICE_ID_TEST / STRIPE_COACH_PRICE_ID_TEST env vars.'
-              : 'Check PRICE_IDS_LIVE in stripe.ts.'),
+              : 'Set STRIPE_PRO_PRICE_ID_LIVE / STRIPE_COACH_PRICE_ID_LIVE env vars. Create live prices in the Stripe dashboard first.'),
         });
         return;
       }
