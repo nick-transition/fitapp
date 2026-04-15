@@ -175,11 +175,28 @@ class _ProgramCard extends StatelessWidget {
   }
 
   Future<void> _deleteProgram(BuildContext context) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    // Query child plans so we can show the count in the dialog and delete them.
+    final plansSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('plans')
+        .where('programId', isEqualTo: program.id)
+        .get();
+    final planCount = plansSnapshot.docs.length;
+
+    if (!context.mounted) return;
+
+    final content = planCount > 0
+        ? 'This will delete the program and all $planCount plan${planCount == 1 ? '' : 's'} underneath it. Linked workouts will become standalone.'
+        : 'Delete this program? Linked workouts will NOT be deleted but will become standalone.';
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Program'),
-        content: const Text('Delete this program? Linked workouts will NOT be deleted but will become standalone.'),
+        content: Text(content),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
@@ -188,13 +205,14 @@ class _ProgramCard extends StatelessWidget {
     );
 
     if (confirmed == true) {
-      final uid = FirebaseAuth.instance.currentUser!.uid;
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('programs')
-          .doc(program.id)
-          .delete();
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in plansSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      batch.delete(
+        FirebaseFirestore.instance.collection('users').doc(uid).collection('programs').doc(program.id),
+      );
+      await batch.commit();
     }
   }
 }

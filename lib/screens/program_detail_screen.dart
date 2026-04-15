@@ -3,7 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout_program.dart';
 import '../models/workout.dart';
+import '../models/workout_plan.dart';
 import '../widgets/workout_card.dart';
+import '../widgets/plan_card.dart';
 import 'workout_edit_screen.dart';
 
 class ProgramDetailScreen extends StatelessWidget {
@@ -56,7 +58,44 @@ class ProgramDetailScreen extends StatelessWidget {
           const Divider(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text('Workouts in this Program', style: theme.textTheme.titleMedium),
+            child: Text('Plans', style: theme.textTheme.titleMedium),
+          ),
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .doc(uid)
+                .collection('plans')
+                .where('programId', isEqualTo: program.id)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              final docs = snapshot.data?.docs ?? [];
+              if (docs.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Text(
+                    'No plans yet — ask your AI coach to create one.',
+                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+                  ),
+                );
+              }
+              return Column(
+                children: docs.map((doc) {
+                  final plan = WorkoutPlan.fromMap(doc.id, doc.data() as Map<String, dynamic>);
+                  return PlanCard(plan: plan);
+                }).toList(),
+              );
+            },
+          ),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text('Workouts', style: theme.textTheme.titleMedium),
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(

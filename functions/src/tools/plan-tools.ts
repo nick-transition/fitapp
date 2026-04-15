@@ -124,8 +124,18 @@ export async function handlePlanTool(
 
       case 'delete_workout_program': {
         const { programId } = args as { programId: string };
-        await db.collection(`users/${userId}/programs`).doc(programId).delete();
-        return textResult({ success: true, programId });
+        // Cascade-delete all plans belonging to this program
+        const plansSnapshot = await db
+          .collection(`users/${userId}/plans`)
+          .where('programId', '==', programId)
+          .get();
+        const batch = db.batch();
+        for (const doc of plansSnapshot.docs) {
+          batch.delete(doc.ref);
+        }
+        batch.delete(db.collection(`users/${userId}/programs`).doc(programId));
+        await batch.commit();
+        return textResult({ success: true, programId, deletedPlans: plansSnapshot.size });
       }
 
       case 'create_workout_plan': {
