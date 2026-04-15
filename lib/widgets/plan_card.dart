@@ -1,10 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout_plan.dart';
 
 class PlanCard extends StatelessWidget {
   final WorkoutPlan plan;
 
   const PlanCard({super.key, required this.plan});
+
+  Future<void> _deletePlan(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Plan'),
+        content: Text('Delete "${plan.name}"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('plans')
+          .doc(plan.id)
+          .delete();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +48,20 @@ class PlanCard extends StatelessWidget {
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 16),
         leading: const Icon(Icons.event_note, color: Colors.teal),
-        title: Text(plan.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(plan.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+              onPressed: () => _deletePlan(context),
+              tooltip: 'Delete Plan',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
         subtitle: Text(
           '${plan.days.length} day${plan.days.length == 1 ? '' : 's'} · $totalExercises exercise${totalExercises == 1 ? '' : 's'}',
           style: theme.textTheme.bodySmall,
