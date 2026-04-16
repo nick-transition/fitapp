@@ -6,6 +6,7 @@ class PlanExercise {
   final int? reps;
   final String? weight;
   final String? notes;
+  final String? videoUrl;
 
   PlanExercise({
     required this.name,
@@ -13,6 +14,7 @@ class PlanExercise {
     this.reps,
     this.weight,
     this.notes,
+    this.videoUrl,
   });
 
   factory PlanExercise.fromMap(Map<String, dynamic> data) {
@@ -22,6 +24,7 @@ class PlanExercise {
       reps: data['reps'],
       weight: data['weight']?.toString(),
       notes: data['notes'],
+      videoUrl: data['videoUrl'],
     );
   }
 
@@ -31,6 +34,7 @@ class PlanExercise {
         'reps': reps,
         'weight': weight,
         'notes': notes,
+        'videoUrl': videoUrl,
       };
 }
 
