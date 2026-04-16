@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout_plan.dart';
+import 'video_player.dart';
 
 class PlanCard extends StatelessWidget {
   final WorkoutPlan plan;
@@ -156,6 +157,14 @@ class _ExerciseRow extends StatelessWidget {
                   color: Colors.grey[600],
                   fontStyle: FontStyle.italic,
                 ),
+              ),
+            ),
+          if (ex.videoUrl != null && ex.videoUrl!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: VideoLinkTile(
+                url: ex.videoUrl,
+                title: ex.name,
               ),
             ),
         ],
