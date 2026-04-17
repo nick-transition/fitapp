@@ -21,12 +21,6 @@ class VideoLinkTileState extends State<VideoLinkTile> {
   @override
   void initState() {
     super.initState();
-    // Auto-expand on web — ListTile.onTap doesn't receive pointer events
-    // reliably inside CanvasKit scrollable containers (flutter/flutter#54027).
-    // On web we use a raw iframe via HtmlElementView, no controller needed.
-    if (kIsWeb && _videoId != null) {
-      _isExpanded = true;
-    }
   }
 
   String? get _videoId {
@@ -53,12 +47,7 @@ class VideoLinkTileState extends State<VideoLinkTile> {
     if (widget.url != oldWidget.url) {
       _controller?.close();
       _controller = null;
-      final videoId = _videoId;
-      if (kIsWeb && videoId != null) {
-        _isExpanded = true;
-      } else {
-        _isExpanded = false;
-      }
+      _isExpanded = false;
     }
   }
 
@@ -121,7 +110,7 @@ class VideoLinkTileState extends State<VideoLinkTile> {
           title: Text(widget.title, style: const TextStyle(fontSize: 14)),
           subtitle: Text(
             videoId != null
-              ? (_isExpanded ? (kIsWeb ? 'Reference video' : 'Tap to hide video') : 'Watch reference video')
+              ? (_isExpanded ? 'Tap to hide video' : 'Watch reference video')
               : 'Open link',
             style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
@@ -179,35 +168,64 @@ class VideoLinkTileState extends State<VideoLinkTile> {
     final videoId = _videoId;
     if (videoId == null) return const SizedBox.shrink();
 
+    // Small clickable thumbnail. Tap opens the YouTube URL in a new browser
+    // tab via _launchUrl (which passes webOnlyWindowName: "_blank").
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      child: Column(
-        children: [
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: HtmlElementView.fromTagName(
-              tagName: 'iframe',
-              onElementCreated: (Object element) {
-                // element is a web Element; use dynamic to call setAttribute
-                final el = element as dynamic;
-                el.setAttribute('src', 'https://www.youtube.com/embed/$videoId?autoplay=0&rel=0');
-                el.setAttribute('style', 'border:none;width:100%;height:100%');
-                el.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
-                el.setAttribute('allowfullscreen', 'true');
-              },
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 240),
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: _launchUrl,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        'https://img.youtube.com/vi/$videoId/mqdefault.jpg',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(color: Colors.black12),
+                      ),
+                      Container(color: Colors.black26),
+                      const Center(
+                        child: Icon(
+                          Icons.play_circle_filled,
+                          size: 48,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Positioned(
+                        right: 6,
+                        bottom: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.open_in_new, size: 12, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text('YouTube', style: TextStyle(color: Colors.white, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton.icon(
-                onPressed: _launchUrl,
-                icon: const Icon(Icons.open_in_new, size: 14),
-                label: const Text('Open in YouTube', style: TextStyle(fontSize: 12)),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
