@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -62,6 +63,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'FitApp',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: const _AppScrollBehavior(),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.teal,
@@ -78,6 +80,23 @@ class MyApp extends StatelessWidget {
       home: const AuthWrapper(),
     );
   }
+}
+
+class _AppScrollBehavior extends MaterialScrollBehavior {
+  const _AppScrollBehavior();
+
+  // Mobile Chrome sometimes reports pointer events as non-touch kinds on
+  // certain builds. Enabling every drag device guarantees scrolling works
+  // across touch, mouse, stylus, and trackpad — including when nested
+  // tappable widgets (e.g. ExpansionTile) are present.
+  @override
+  Set<PointerDeviceKind> get dragDevices => const {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.unknown,
+      };
 }
 
 class AuthWrapper extends StatefulWidget {

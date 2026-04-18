@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/workout.dart';
 import '../models/workout_session.dart';
-import '../widgets/workout_card.dart';
 import '../widgets/session_card.dart';
 import 'api_token_screen.dart';
 import 'calendar_screen.dart';
@@ -12,7 +10,6 @@ import '../models/workout_program.dart';
 import 'program_edit_screen.dart';
 import 'faq_screen.dart';
 import 'subscription_screen.dart';
-import 'workout_edit_screen.dart';
 import 'session_edit_screen.dart';
 
 import 'program_detail_screen.dart';
@@ -23,7 +20,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('FitApp'),
@@ -70,7 +67,6 @@ class HomeScreen extends StatelessWidget {
             isScrollable: true,
             tabs: [
               Tab(icon: Icon(Icons.folder_copy), text: 'Programs'),
-              Tab(icon: Icon(Icons.fitness_center), text: 'Workouts'),
               Tab(icon: Icon(Icons.calendar_month), text: 'Calendar'),
               Tab(icon: Icon(Icons.history), text: 'Sessions'),
             ],
@@ -79,7 +75,6 @@ class HomeScreen extends StatelessWidget {
         body: const TabBarView(
           children: [
             _ProgramsTab(),
-            _WorkoutsTab(),
             CalendarScreen(),
             _SessionsTab(),
           ],
@@ -189,8 +184,8 @@ class _ProgramCard extends StatelessWidget {
     if (!context.mounted) return;
 
     final content = planCount > 0
-        ? 'This will delete the program and all $planCount plan${planCount == 1 ? '' : 's'} underneath it. Linked workouts will become standalone.'
-        : 'Delete this program? Linked workouts will NOT be deleted but will become standalone.';
+        ? 'This will delete the program and all $planCount workout${planCount == 1 ? '' : 's'} underneath it.'
+        : 'Delete this program?';
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -216,70 +211,6 @@ class _ProgramCard extends StatelessWidget {
     }
   }
 }
-
-class _WorkoutsTab extends StatelessWidget {
-  const _WorkoutsTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return const Scaffold(body: Center(child: Text('Not authenticated')));
-    final uid = user.uid;
-
-    return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const WorkoutEditScreen()),
-        ),
-        tooltip: 'Add Workout',
-        child: const Icon(Icons.add),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .collection('workouts')
-            .orderBy('updatedAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Something went wrong: ${snapshot.error}'));
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final docs = snapshot.data!.docs;
-          if (docs.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.fitness_center, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('No workouts yet', style: TextStyle(fontSize: 18, color: Colors.grey)),
-                  SizedBox(height: 8),
-                  Text('Tap + to create your first workout', style: TextStyle(color: Colors.grey)),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final workout = Workout.fromMap(
-                  docs[index].id, docs[index].data()! as Map<String, dynamic>);
-              return WorkoutCard(workout: workout);
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
 
 class _SessionsTab extends StatelessWidget {
   const _SessionsTab();
