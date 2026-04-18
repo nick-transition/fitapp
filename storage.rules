@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Exercise clips live under users/{uid}/sessions/{sessionId}/entries/{entryId}/{file}
+    match /users/{uid}/sessions/{sessionId}/entries/{entryId}/{fileName} {
+      // Owner: full access to their own clips.
+      allow read, write, delete: if request.auth != null && request.auth.uid == uid;
+
+      // Connected coach: read-only via same check used in firestore.rules.
+      allow read: if request.auth != null &&
+        firestore.exists(/databases/(default)/documents/coachConnections/$(uid + '_' + request.auth.uid)) &&
+        firestore.get(/databases/(default)/documents/coachConnections/$(uid + '_' + request.auth.uid)).data.status == 'active';
+
+      // Uploads: must be a video and ≤ 100 MB.
+      allow create, update: if request.auth != null && request.auth.uid == uid &&
+        request.resource.size < 100 * 1024 * 1024 &&
+        request.resource.contentType.matches('video/.*');
+    }
+
+    // Everything else is locked down.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
