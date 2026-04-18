@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout_session.dart';
+import '../widgets/recorded_video_tile.dart';
 import '../widgets/video_player.dart';
 
 class SessionDetailScreen extends StatefulWidget {
@@ -185,8 +186,12 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                             (data['sets'] as List<dynamic>?) ?? [];
                         final notes = data['notes'] as String?;
                         final videoUrl = data['videoUrl'] as String?;
+                        final recordedVideoUrl =
+                            data['recordedVideoUrl'] as String?;
                         final entryId = doc.id;
                         final hasVideo = videoUrl != null && videoUrl.isNotEmpty;
+                        final hasRecorded = recordedVideoUrl != null &&
+                            recordedVideoUrl.isNotEmpty;
 
                         return Card(
                           margin: const EdgeInsets.symmetric(
@@ -221,8 +226,13 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                                   if (hasVideo)
                                     VideoLinkTile(
                                       key: _getVideoKey(entryId),
-                                      url: videoUrl, 
-                                      title: 'Reference Video'
+                                      url: videoUrl,
+                                      title: 'Reference Video',
+                                    ),
+                                  if (hasRecorded)
+                                    RecordedVideoTile(
+                                      url: recordedVideoUrl,
+                                      title: 'Your Clip',
                                     ),
                                   const SizedBox(height: 8),
                                   ...sets.asMap().entries.map((entry) {

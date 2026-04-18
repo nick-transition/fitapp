@@ -28,6 +28,9 @@ class SessionEntry {
   final String? notes;
   final int order;
   final String? videoUrl;
+  final String? recordedVideoUrl;
+  final DateTime? recordedAt;
+  final int? recordedDurationMs;
 
   SessionEntry({
     required this.id,
@@ -36,7 +39,28 @@ class SessionEntry {
     this.notes,
     required this.order,
     this.videoUrl,
+    this.recordedVideoUrl,
+    this.recordedAt,
+    this.recordedDurationMs,
   });
+
+  SessionEntry copyWith({
+    String? recordedVideoUrl,
+    DateTime? recordedAt,
+    int? recordedDurationMs,
+  }) {
+    return SessionEntry(
+      id: id,
+      exerciseName: exerciseName,
+      sets: sets,
+      notes: notes,
+      order: order,
+      videoUrl: videoUrl,
+      recordedVideoUrl: recordedVideoUrl ?? this.recordedVideoUrl,
+      recordedAt: recordedAt ?? this.recordedAt,
+      recordedDurationMs: recordedDurationMs ?? this.recordedDurationMs,
+    );
+  }
 
   factory SessionEntry.fromMap(String id, Map<String, dynamic> data) {
     return SessionEntry(
@@ -49,6 +73,9 @@ class SessionEntry {
       notes: data['notes'],
       order: data['order'] ?? 0,
       videoUrl: data['videoUrl'],
+      recordedVideoUrl: data['recordedVideoUrl'],
+      recordedAt: (data['recordedAt'] as Timestamp?)?.toDate(),
+      recordedDurationMs: data['recordedDurationMs'] as int?,
     );
   }
 
@@ -59,6 +86,10 @@ class SessionEntry {
       'notes': notes,
       'order': order,
       'videoUrl': videoUrl,
+      'recordedVideoUrl': recordedVideoUrl,
+      'recordedAt':
+          recordedAt != null ? Timestamp.fromDate(recordedAt!) : null,
+      'recordedDurationMs': recordedDurationMs,
     };
   }
 }

@@ -5,6 +5,7 @@ import '../models/workout.dart';
 import '../models/workout_session.dart';
 import '../widgets/workout_card.dart';
 import '../widgets/video_player.dart';
+import '../widgets/recorded_video_tile.dart';
 
 class AthleteDetailScreen extends StatelessWidget {
   final String athleteUid;
@@ -423,6 +424,8 @@ class _SessionEntryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasRecorded =
+        entry.recordedVideoUrl != null && entry.recordedVideoUrl!.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: Column(
@@ -445,6 +448,14 @@ class _SessionEntryTile extends StatelessWidget {
               child: Text(entry.notes!,
                   style: theme.textTheme.bodySmall?.copyWith(
                       fontStyle: FontStyle.italic, color: Colors.grey)),
+            ),
+          if (hasRecorded)
+            Padding(
+              padding: const EdgeInsets.only(left: 4, top: 4),
+              child: RecordedVideoTile(
+                url: entry.recordedVideoUrl!,
+                title: 'Athlete Clip',
+              ),
             ),
         ],
       ),

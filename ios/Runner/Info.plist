@@ -4,6 +4,12 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Record an exercise clip to review your form and share it with your coach.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Capture audio alongside your exercise video clip.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Select an existing video of your exercise to share with your coach.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
