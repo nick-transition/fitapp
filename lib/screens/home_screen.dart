@@ -303,7 +303,7 @@ Future<void> _showPlanPicker(BuildContext context, String uid) async {
                   children: [
                     Expanded(
                       child: Text(
-                        'Choose a workout',
+                        'Choose a Workout',
                         style: Theme.of(sheetContext).textTheme.titleMedium,
                       ),
                     ),
