@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ExerciseVideoUpload {
@@ -39,10 +40,10 @@ class ExerciseVideoService {
         'users/$uid/sessions/$sessionId/entries/$entryDocId/$timestamp.mp4';
 
     final ref = FirebaseStorage.instance.ref(path);
-    final task = ref.putFile(
-      File(file.path),
-      SettableMetadata(contentType: 'video/mp4'),
-    );
+    final metadata = SettableMetadata(contentType: 'video/mp4');
+    final task = kIsWeb
+        ? ref.putData(await file.readAsBytes(), metadata)
+        : ref.putFile(File(file.path), metadata);
 
     if (onProgress != null) {
       task.snapshotEvents.listen((snap) {
