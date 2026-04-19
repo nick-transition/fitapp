@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/exercise.dart';
+import '../models/workout.dart';
+import '../models/workout_plan.dart';
 import '../models/workout_session.dart';
 import '../widgets/session_card.dart';
 import 'api_token_screen.dart';
@@ -94,13 +97,27 @@ class _ProgramsTab extends StatelessWidget {
     final uid = user.uid;
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ProgramEditScreen()),
-        ),
-        tooltip: 'New Program',
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'newProgramFab',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProgramEditScreen()),
+            ),
+            tooltip: 'New Program',
+            child: const Icon(Icons.create_new_folder_outlined),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            heroTag: 'startWorkoutFabPrograms',
+            onPressed: () => showStartWorkoutSheet(context),
+            tooltip: 'Start Workout',
+            child: const Icon(Icons.play_arrow),
+          ),
+        ],
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -223,12 +240,10 @@ class _SessionsTab extends StatelessWidget {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SessionEditScreen()),
-        ),
-        tooltip: 'Log Session',
-        child: const Icon(Icons.add),
+        heroTag: 'startWorkoutFabSessions',
+        onPressed: () => showStartWorkoutSheet(context),
+        tooltip: 'Start Workout',
+        child: const Icon(Icons.play_arrow),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -283,4 +298,247 @@ class _SessionsTab extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> showStartWorkoutSheet(BuildContext context) async {
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid == null) return;
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.7,
+      maxChildSize: 0.95,
+      minChildSize: 0.4,
+      builder: (_, scrollController) => _StartWorkoutPicker(
+        uid: uid,
+        scrollController: scrollController,
+      ),
+    ),
+  );
+}
+
+class _StartWorkoutPicker extends StatelessWidget {
+  final String uid;
+  final ScrollController scrollController;
+
+  const _StartWorkoutPicker({
+    required this.uid,
+    required this.scrollController,
+  });
+
+  Future<_PickerData> _loadData() async {
+    final firestore = FirebaseFirestore.instance;
+    final results = await Future.wait([
+      firestore.collection('users').doc(uid).collection('programs').get(),
+      firestore.collection('users').doc(uid).collection('plans').get(),
+    ]);
+    final programs = <String, WorkoutProgram>{
+      for (final doc in results[0].docs)
+        doc.id: WorkoutProgram.fromMap(doc.id, doc.data()),
+    };
+    final entries = results[1].docs.map((d) {
+      final data = d.data();
+      return _PlanEntry(
+        programId: data['programId'] as String?,
+        plan: WorkoutPlan.fromMap(d.id, data),
+      );
+    }).toList();
+    return _PickerData(programs: programs, plans: entries);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return FutureBuilder<_PickerData>(
+      future: _loadData(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        final data = snapshot.data!;
+        if (data.plans.isEmpty) {
+          return ListView(
+            controller: scrollController,
+            padding: const EdgeInsets.all(24),
+            children: [
+              Text('Start a workout', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 24),
+              Text(
+                'You have no workouts yet. Create a program and add a workout to log a session against it.',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          );
+        }
+
+        final grouped = <String, List<WorkoutPlan>>{};
+        for (final entry in data.plans) {
+          final key = entry.programId ?? '';
+          (grouped[key] ??= []).add(entry.plan);
+        }
+        final groupKeys = grouped.keys.toList()
+          ..sort((a, b) {
+            final aName = data.programs[a]?.name ?? '~';
+            final bName = data.programs[b]?.name ?? '~';
+            return aName.toLowerCase().compareTo(bName.toLowerCase());
+          });
+
+        return ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.only(bottom: 24),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: Text('Start a workout',
+                  style: theme.textTheme.titleLarge),
+            ),
+            for (final key in groupKeys) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                child: Text(
+                  data.programs[key]?.name ?? 'Unassigned',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              for (final plan in grouped[key]!)
+                ListTile(
+                  leading:
+                      const Icon(Icons.fitness_center, color: Colors.teal),
+                  title: Text(plan.name),
+                  subtitle: Text(_planSubtitle(plan)),
+                  onTap: () => _onPlanSelected(
+                    context,
+                    plan,
+                    data.programs[key],
+                  ),
+                ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  String _planSubtitle(WorkoutPlan plan) {
+    final dayCount = plan.days.length;
+    final exCount =
+        plan.days.fold<int>(0, (sum, d) => sum + d.exercises.length);
+    if (dayCount == 0) return 'No days defined';
+    return '$dayCount day${dayCount == 1 ? '' : 's'} · '
+        '$exCount exercise${exCount == 1 ? '' : 's'}';
+  }
+
+  Future<void> _onPlanSelected(
+    BuildContext context,
+    WorkoutPlan plan,
+    WorkoutProgram? program,
+  ) async {
+    if (plan.days.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This workout has no days yet.')),
+      );
+      return;
+    }
+    WorkoutDay? day;
+    if (plan.days.length == 1) {
+      day = plan.days.first;
+    } else {
+      day = await showModalBottomSheet<WorkoutDay>(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Pick a day for ${plan.name}',
+                    style: Theme.of(ctx).textTheme.titleMedium,
+                  ),
+                ),
+              ),
+              for (final d in plan.days)
+                ListTile(
+                  leading: const Icon(Icons.today_outlined),
+                  title: Text(d.name.isEmpty ? 'Day' : d.name),
+                  subtitle: Text(
+                    '${d.exercises.length} '
+                    'exercise${d.exercises.length == 1 ? '' : 's'}',
+                  ),
+                  onTap: () => Navigator.pop(ctx, d),
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      );
+    }
+    if (day == null || !context.mounted) return;
+
+    final workout = _workoutFromPlanDay(
+      plan: plan,
+      day: day,
+      programId: program?.id,
+    );
+    Navigator.pop(context);
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SessionEditScreen(workout: workout),
+      ),
+    );
+  }
+
+  Workout _workoutFromPlanDay({
+    required WorkoutPlan plan,
+    required WorkoutDay day,
+    String? programId,
+  }) {
+    final exercises = day.exercises.asMap().entries.map((entry) {
+      final i = entry.key;
+      final ex = entry.value;
+      return Exercise(
+        id: '${plan.id}_$i',
+        name: ex.name,
+        sets: ex.sets,
+        reps: ex.reps,
+        weight: ex.weight,
+        notes: ex.notes,
+        videoUrl: ex.videoUrl,
+        order: i,
+      );
+    }).toList();
+    final name =
+        plan.days.length > 1 ? '${plan.name} — ${day.name}' : plan.name;
+    return Workout(
+      id: plan.id,
+      programId: programId,
+      name: name,
+      description: plan.description,
+      type: 'plan',
+      exercises: exercises,
+    );
+  }
+}
+
+class _PickerData {
+  final Map<String, WorkoutProgram> programs;
+  final List<_PlanEntry> plans;
+  _PickerData({required this.programs, required this.plans});
+}
+
+class _PlanEntry {
+  final String? programId;
+  final WorkoutPlan plan;
+  _PlanEntry({required this.programId, required this.plan});
 }
