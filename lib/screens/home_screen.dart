@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/exercise.dart';
+import '../models/workout.dart';
+import '../models/workout_plan.dart';
 import '../models/workout_session.dart';
 import '../widgets/session_card.dart';
 import 'api_token_screen.dart';
@@ -223,11 +226,8 @@ class _SessionsTab extends StatelessWidget {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SessionEditScreen()),
-        ),
-        tooltip: 'Log Session',
+        onPressed: () => _showPlanPicker(context, uid),
+        tooltip: 'Start Workout',
         child: const Icon(Icons.add),
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -283,4 +283,132 @@ class _SessionsTab extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _showPlanPicker(BuildContext context, String uid) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (sheetContext) {
+      return DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        builder: (_, scrollController) {
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Choose a Workout',
+                        style: Theme.of(sheetContext).textTheme.titleMedium,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(sheetContext),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: FutureBuilder<QuerySnapshot>(
+                  future: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(uid)
+                      .collection('plans')
+                      .orderBy('updatedAt', descending: true)
+                      .get(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    }
+                    final docs = snapshot.data?.docs ?? [];
+                    if (docs.isEmpty) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Text(
+                            'No workouts yet. Create one from the Programs tab.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      );
+                    }
+                    return ListView.builder(
+                      controller: scrollController,
+                      itemCount: docs.length,
+                      itemBuilder: (_, i) {
+                        final plan = WorkoutPlan.fromMap(
+                          docs[i].id,
+                          docs[i].data() as Map<String, dynamic>,
+                        );
+                        final totalExercises = plan.days
+                            .fold<int>(0, (acc, d) => acc + d.exercises.length);
+                        return ListTile(
+                          leading: const Icon(Icons.event_note, color: Colors.teal),
+                          title: Text(plan.name),
+                          subtitle: Text(
+                            '${plan.days.length} day${plan.days.length == 1 ? '' : 's'} · $totalExercises exercise${totalExercises == 1 ? '' : 's'}',
+                          ),
+                          onTap: () {
+                            Navigator.pop(sheetContext);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SessionEditScreen(
+                                  workout: _planToWorkout(plan),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+Workout _planToWorkout(WorkoutPlan plan) {
+  final exercises = <Exercise>[];
+  var order = 0;
+  for (final day in plan.days) {
+    for (final ex in day.exercises) {
+      exercises.add(Exercise(
+        id: '${plan.id}_$order',
+        name: ex.name,
+        sets: ex.sets,
+        reps: ex.reps,
+        weight: ex.weight,
+        notes: ex.notes,
+        order: order,
+        videoUrl: ex.videoUrl,
+      ));
+      order++;
+    }
+  }
+  return Workout(
+    id: plan.id,
+    name: plan.name,
+    description: plan.description,
+    type: 'plan',
+    exercises: exercises,
+    createdAt: plan.createdAt,
+    updatedAt: plan.updatedAt,
+  );
 }
