@@ -17,20 +17,13 @@ type StripeSubscriptionStatus = 'active' | 'canceled' | 'incomplete' | 'incomple
 // Price IDs differ between test and live mode — configure both sets.
 const isTestMode = (): boolean => STRIPE_SECRET_KEY.value().startsWith('sk_test_');
 
-const PRICE_IDS_TEST: Record<SubscriptionTier, string | null> = {
-  free: null,
-  pro: process.env.STRIPE_PRO_PRICE_ID_TEST || 'price_1TKcyWPtbwp1t4mSEwScBDRT',   // $9.99/mo
-  coach: process.env.STRIPE_COACH_PRICE_ID_TEST || 'price_1TKcyWPtbwp1t4mScl7d3fyz', // $29.99/mo
-};
-
-const PRICE_IDS_LIVE: Record<SubscriptionTier, string | null> = {
-  free: null,
-  pro: process.env.STRIPE_PRO_PRICE_ID_LIVE || 'price_1TLYZ2Q3zUu0EIKvJYP1vuei',   // $9.99/mo
-  coach: process.env.STRIPE_COACH_PRICE_ID_LIVE || 'price_1TLYZYQ3zUu0EIKvS79urawK', // $29.99/mo
-};
-
 function getPriceIds(): Record<SubscriptionTier, string | null> {
-  return isTestMode() ? PRICE_IDS_TEST : PRICE_IDS_LIVE;
+  const suffix = isTestMode() ? 'TEST' : 'LIVE';
+  return {
+    free: null,
+    pro: process.env[`STRIPE_PRO_PRICE_ID_${suffix}`] ?? null,
+    coach: process.env[`STRIPE_COACH_PRICE_ID_${suffix}`] ?? null,
+  };
 }
 
 function getStripe(): InstanceType<typeof Stripe> {
