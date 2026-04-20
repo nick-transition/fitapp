@@ -2,6 +2,12 @@
 
 Thank you for your interest in contributing to FitApp! This project is built as a protocol-style open source company where contributors earn from the revenue pool.
 
+## Bounties
+
+Select roadmap items have fixed-dollar bounties paid via a one-time [GitHub Sponsors](https://github.com/sponsors) sponsorship on PR merge. Bounties are **additive to** the revenue-pool points below — a bountied PR earns both. See [BOUNTIES.md](BOUNTIES.md) for the workflow (claiming, acceptance criteria, sizing).
+
+Browse open bounties: [issues labeled `bounty`](https://github.com/nick-transition/fitapp/issues?q=is%3Aissue+label%3Abounty).
+
 ## How Contributors Earn
 
 FitApp allocates 25% of subscription revenue to the contributor pool. Contributions are scored based on:

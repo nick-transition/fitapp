@@ -105,6 +105,8 @@ E2e tests record video of each test run and capture screenshots of every major s
 
 Contributors earn from FitApp's revenue pool — 25% of subscription revenue is distributed monthly based on contribution points.
 
+Select roadmap items also have fixed-dollar **bounties** paid via a one-time [GitHub Sponsors](https://github.com/sponsors) sponsorship on PR merge — additive to the revenue-pool points. See [BOUNTIES.md](BOUNTIES.md).
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the contributor scoring model, AI usage standards, and code guidelines.
 
 ## License
