@@ -7,8 +7,9 @@ import 'session_edit_screen.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
   final Workout workout;
+  final bool readOnly;
 
-  const WorkoutDetailScreen({super.key, required this.workout});
+  const WorkoutDetailScreen({super.key, required this.workout, this.readOnly = false});
 
   @override
   State<WorkoutDetailScreen> createState() => _WorkoutDetailScreenState();
@@ -34,13 +35,14 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       appBar: AppBar(
         title: Text(widget.workout.name),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => WorkoutEditScreen(workout: widget.workout)),
+          if (!widget.readOnly)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => WorkoutEditScreen(workout: widget.workout)),
+              ),
             ),
-          ),
         ],
       ),
       body: ListView(
@@ -65,16 +67,17 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       ),
                     ],
                     const Spacer(),
-                    FilledButton.icon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SessionEditScreen(workout: widget.workout),
+                    if (!widget.readOnly)
+                      FilledButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SessionEditScreen(workout: widget.workout),
+                          ),
                         ),
+                        icon: const Icon(Icons.play_arrow, size: 18),
+                        label: const Text('Start'),
                       ),
-                      icon: const Icon(Icons.play_arrow, size: 18),
-                      label: const Text('Start'),
-                    ),
                   ],
                 ),
                 if (widget.workout.description != null && widget.workout.description!.isNotEmpty) ...[
