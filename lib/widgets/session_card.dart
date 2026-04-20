@@ -6,8 +6,9 @@ import '../screens/session_detail_screen.dart';
 
 class SessionCard extends StatelessWidget {
   final WorkoutSession session;
+  final bool readOnly;
 
-  const SessionCard({super.key, required this.session});
+  const SessionCard({super.key, required this.session, this.readOnly = false});
 
   String _formatDate(DateTime? date) {
     if (date == null) return 'Unknown date';
@@ -79,11 +80,12 @@ class SessionCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                    onPressed: () => _deleteSession(context),
-                    tooltip: 'Delete Session',
-                  ),
+                  if (!readOnly)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                      onPressed: () => _deleteSession(context),
+                      tooltip: 'Delete Session',
+                    ),
                 ],
               ),
               Row(
