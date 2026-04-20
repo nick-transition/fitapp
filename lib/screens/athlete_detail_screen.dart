@@ -62,7 +62,7 @@ class _AthleteProgramsTab extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Error: \${snapshot.error}'));
+          return Center(child: Text('Error: ${snapshot.error}'));
         }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -97,9 +97,7 @@ class _AthleteProgramsTab extends StatelessWidget {
 class _ProgramTile extends StatelessWidget {
   final WorkoutProgram program;
   final String athleteUid;
-  final bool readOnly;
-
-  const _ProgramTile({required this.program, required this.athleteUid, this.readOnly = false});
+  const _ProgramTile({required this.program, required this.athleteUid});
 
   @override
   Widget build(BuildContext context) {
@@ -140,81 +138,14 @@ class _ProgramTile extends StatelessWidget {
                 children: docs.map((doc) {
                   final workout = Workout.fromMap(
                       doc.id, doc.data() as Map<String, dynamic>);
-                  return _WorkoutExpansionTile(workout: workout, athleteUid: athleteUid);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: WorkoutCard(workout: workout, readOnly: true),
+                  );
                 }).toList(),
               );
             },
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WorkoutExpansionTile extends StatelessWidget {
-  final Workout workout;
-  final String athleteUid;
-  const _WorkoutExpansionTile({required this.workout, required this.athleteUid});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ExpansionTile(
-      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-      leading: const Icon(Icons.fitness_center, size: 18, color: Colors.teal),
-      title: Text(workout.name, style: const TextStyle(fontSize: 14)),
-      subtitle: Text(
-        '\${workout.exercises.length} exercise(s) · \${workout.type}\${workout.schedule != null ? ' · \${workout.schedule}' : ''}',
-        style: theme.textTheme.bodySmall,
-      ),
-      children: workout.exercises.isEmpty
-          ? [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(32, 4, 16, 12),
-                child: Text('No exercises defined',
-                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
-              ),
-            ]
-          : workout.exercises.map((ex) => _AthleteExerciseRow(ex: ex)).toList(),
-    );
-  }
-}
-
-class _AthleteExerciseRow extends StatelessWidget {
-  final dynamic ex;
-  const _AthleteExerciseRow({required this.ex});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasVideo = ex.videoUrl != null && (ex.videoUrl as String).isNotEmpty;
-    final hasNotes = ex.notes != null && (ex.notes as String).isNotEmpty;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '• \${ex.name}  \${ex.sets}×\${ex.reps ?? '—'}\${ex.weight != null ? ' @ \${ex.weight}' : ''}',
-            style: theme.textTheme.bodySmall,
-          ),
-          if (hasVideo)
-            VideoLinkTile(
-              url: ex.videoUrl as String,
-              title: 'Reference: \${ex.name}',
-            ),
-          if (hasNotes)
-            Padding(
-              padding: const EdgeInsets.only(left: 10, top: 2),
-              child: Text(
-                ex.notes as String,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -236,7 +167,7 @@ class _AthleteWorkoutsTab extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Error: \${snapshot.error}'));
+          return Center(child: Text('Error: ${snapshot.error}'));
         }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -278,7 +209,7 @@ class _AthleteSessionsTab extends StatelessWidget {
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
-    return '\${months[date.month - 1]} \${date.day}, \${date.year}';
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
   @override
@@ -294,7 +225,7 @@ class _AthleteSessionsTab extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Error: \${snapshot.error}'));
+          return Center(child: Text('Error: ${snapshot.error}'));
         }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -338,7 +269,7 @@ class _AthleteSessionsTab extends StatelessWidget {
                 ),
                 subtitle: Text(
                   session.dayName != null
-                      ? '\${session.dayName} · \${_formatDate(session.startedAt)}'
+                      ? '${session.dayName} · ${_formatDate(session.startedAt)}'
                       : _formatDate(session.startedAt),
                 ),
                 trailing: session.isCompleted
@@ -373,7 +304,7 @@ class _AthleteSessionsTab extends StatelessWidget {
                       if (entrySnapshot.hasError) {
                         return Padding(
                           padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                          child: Text('Error loading entries: \${entrySnapshot.error}',
+                          child: Text('Error loading entries: ${entrySnapshot.error}',
                               style: theme.textTheme.bodySmall
                                   ?.copyWith(color: Colors.red)),
                         );
@@ -443,8 +374,8 @@ class _SessionEntryTile extends StatelessWidget {
           ...entry.sets.asMap().entries.map((e) => Padding(
                 padding: const EdgeInsets.only(left: 12, top: 2),
                 child: Text(
-                  'Set \${e.key + 1}: \${e.value.reps} reps'
-                  '\${e.value.weight != null ? ' @ \${e.value.weight}' : ''}',
+                  'Set ${e.key + 1}: ${e.value.reps} reps'
+                  '${e.value.weight != null ? ' @ ${e.value.weight}' : ''}',
                   style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
                 ),
               )),
@@ -476,11 +407,6 @@ class _AthleteCalendarTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Reuse the athlete's calendar widget, scoped to athleteUid.
-    // CalendarScreen reads sessions for the currently authenticated user (coach),
-    // so we need a variant that reads for athleteUid.
-    // We inline a minimal calendar UI here since the calendar data source
-    // must be scoped to the athlete.
     return _ReadOnlyCalendar(athleteUid: athleteUid);
   }
 }
@@ -526,7 +452,7 @@ class _ReadOnlyCalendarState extends State<_ReadOnlyCalendar> {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Error: \${snapshot.error}'));
+          return Center(child: Text('Error: ${snapshot.error}'));
         }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -549,16 +475,14 @@ class _ReadOnlyCalendarState extends State<_ReadOnlyCalendar> {
 
         final selectedSessions = sessionsByDate[_selectedDate] ?? [];
 
-        // Build day cells
         final firstDay = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
         final lastDay = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
-        final startWeekday = firstDay.weekday % 7; // Sunday=0
+        final startWeekday = firstDay.weekday % 7;
         final daysInMonth = lastDay.day;
         final today = DateTime.now();
 
         return Column(
           children: [
-            // Month header
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -569,7 +493,7 @@ class _ReadOnlyCalendarState extends State<_ReadOnlyCalendar> {
                     onPressed: () => _changeMonth(-1),
                   ),
                   Text(
-                    '\${months[_focusedMonth.month - 1]} \${_focusedMonth.year}',
+                    '${months[_focusedMonth.month - 1]} ${_focusedMonth.year}',
                     style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   IconButton(
@@ -579,7 +503,6 @@ class _ReadOnlyCalendarState extends State<_ReadOnlyCalendar> {
                 ],
               ),
             ),
-            // Weekday labels
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Row(
@@ -589,7 +512,6 @@ class _ReadOnlyCalendarState extends State<_ReadOnlyCalendar> {
               ),
             ),
             const SizedBox(height: 4),
-            // Calendar grid
             Expanded(
               child: GridView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -630,7 +552,6 @@ class _ReadOnlyCalendarState extends State<_ReadOnlyCalendar> {
                 },
               ),
             ),
-            // Selected date sessions
             if (selectedSessions.isNotEmpty)
               Expanded(
                 child: ListView.builder(
