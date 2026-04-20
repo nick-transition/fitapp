@@ -7,8 +7,15 @@ import '../widgets/video_player.dart';
 
 class SessionDetailScreen extends StatefulWidget {
   final WorkoutSession session;
+  final bool readOnly;
+  final String? athleteUid;
 
-  const SessionDetailScreen({super.key, required this.session});
+  const SessionDetailScreen({
+    super.key,
+    required this.session,
+    this.readOnly = false,
+    this.athleteUid,
+  });
 
   @override
   State<SessionDetailScreen> createState() => _SessionDetailScreenState();
@@ -44,7 +51,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final uid = widget.athleteUid ?? FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
       appBar: AppBar(
