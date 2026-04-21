@@ -7,8 +7,7 @@ import '../models/workout_plan.dart';
 import '../widgets/workout_card.dart';
 import '../widgets/plan_card.dart';
 import '../widgets/session_card.dart';
-import '../widgets/video_player.dart';
-import '../widgets/recorded_video_tile.dart';
+import 'session_detail_screen.dart';
 
 class AthleteDetailScreen extends StatelessWidget {
   final String athleteUid;
