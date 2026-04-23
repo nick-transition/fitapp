@@ -14,7 +14,7 @@ class PlanCard extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Workout'),
+        title: const Text('Delete Plan'),
         content: Text('Delete "${plan.name}"? This cannot be undone.'),
         actions: [
           TextButton(
@@ -59,7 +59,7 @@ class PlanCard extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
                 onPressed: () => _deletePlan(context),
-                tooltip: 'Delete Workout',
+                tooltip: 'Delete Plan',
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),

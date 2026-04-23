@@ -40,7 +40,7 @@ class SessionCard extends StatelessWidget {
     );
 
     if (confirmed == true) {
-      final uid = FirebaseAuth.instance.currentUser!.uid;
+      final uid = athleteUid ?? FirebaseAuth.instance.currentUser!.uid;
       await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)

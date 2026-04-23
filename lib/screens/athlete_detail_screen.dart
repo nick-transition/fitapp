@@ -294,6 +294,8 @@ class _AthleteCalendarTabState extends State<_AthleteCalendarTab> {
           .collection('users')
           .doc(widget.athleteUid)
           .collection('sessions')
+          .orderBy('startedAt', descending: true)
+          .limit(200)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
@@ -303,10 +305,11 @@ class _AthleteCalendarTabState extends State<_AthleteCalendarTab> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final sessions = snapshot.data!.docs.map((doc) {
+        final docs = snapshot.data?.docs ?? [];
+        final sessions = docs.map((doc) {
           return WorkoutSession.fromMap(
             doc.id,
-            doc.data()! as Map<String, dynamic>,
+            doc.data() as Map<String, dynamic>,
           );
         }).toList();
 
