@@ -109,7 +109,6 @@ class _WorkoutCardState extends State<WorkoutCard> {
                     MaterialPageRoute(builder: (_) => WorkoutDetailScreen(
                       workout: widget.workout,
                       readOnly: widget.readOnly,
-                      athleteUid: widget.athleteUid,
                     )),
                   ),
                 ),

@@ -56,6 +56,17 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.session.planName ?? 'Quick Workout'),
+        actions: [
+          if (widget.readOnly)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Chip(
+                label: const Text('Coach View', style: TextStyle(fontSize: 12)),
+                backgroundColor: theme.colorScheme.secondaryContainer,
+                side: BorderSide.none,
+              ),
+            ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

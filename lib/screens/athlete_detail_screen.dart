@@ -280,9 +280,20 @@ class _AthleteCalendarTabState extends State<_AthleteCalendarTab> {
 
   void _changeMonth(int delta) {
     setState(() {
-      _focusedMonth = DateTime(
+      final newFocusedMonth = DateTime(
         _focusedMonth.year,
         _focusedMonth.month + delta,
+      );
+      final daysInMonth = DateUtils.getDaysInMonth(
+        newFocusedMonth.year,
+        newFocusedMonth.month,
+      );
+
+      _focusedMonth = newFocusedMonth;
+      _selectedDate = DateTime(
+        newFocusedMonth.year,
+        newFocusedMonth.month,
+        _selectedDate.day > daysInMonth ? daysInMonth : _selectedDate.day,
       );
     });
   }

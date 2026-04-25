@@ -7,13 +7,11 @@ import 'session_edit_screen.dart';
 class WorkoutDetailScreen extends StatelessWidget {
   final Workout workout;
   final bool readOnly;
-  final String? athleteUid;
 
   const WorkoutDetailScreen({
     super.key,
     required this.workout,
     this.readOnly = false,
-    this.athleteUid,
   });
 
   @override
@@ -49,6 +47,15 @@ class WorkoutDetailScreen extends StatelessWidget {
                 ),
               ),
             ),
+          if (workout.videoUrl != null && workout.videoUrl!.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: VideoLinkTile(
+                url: workout.videoUrl,
+                title: 'Workout Reference Video',
+              ),
+            ),
+          ],
           if (!readOnly)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
