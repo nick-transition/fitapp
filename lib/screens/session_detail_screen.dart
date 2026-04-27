@@ -7,8 +7,15 @@ import '../widgets/video_player.dart';
 
 class SessionDetailScreen extends StatefulWidget {
   final WorkoutSession session;
+  final bool readOnly;
+  final String? athleteUid;
 
-  const SessionDetailScreen({super.key, required this.session});
+  const SessionDetailScreen({
+    super.key,
+    required this.session,
+    this.readOnly = false,
+    this.athleteUid,
+  });
 
   @override
   State<SessionDetailScreen> createState() => _SessionDetailScreenState();
@@ -44,11 +51,22 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final uid = widget.athleteUid ?? FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.session.planName ?? 'Quick Workout'),
+        actions: [
+          if (widget.readOnly)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Chip(
+                label: const Text('Coach View', style: TextStyle(fontSize: 12)),
+                backgroundColor: theme.colorScheme.secondaryContainer,
+                side: BorderSide.none,
+              ),
+            ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

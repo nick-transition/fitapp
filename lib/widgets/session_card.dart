@@ -6,8 +6,10 @@ import '../screens/session_detail_screen.dart';
 
 class SessionCard extends StatelessWidget {
   final WorkoutSession session;
+  final bool readOnly;
+  final String? athleteUid;
 
-  const SessionCard({super.key, required this.session});
+  const SessionCard({super.key, required this.session, this.readOnly = false, this.athleteUid});
 
   String _formatDate(DateTime? date) {
     if (date == null) return 'Unknown date';
@@ -38,7 +40,7 @@ class SessionCard extends StatelessWidget {
     );
 
     if (confirmed == true) {
-      final uid = FirebaseAuth.instance.currentUser!.uid;
+      final uid = athleteUid ?? FirebaseAuth.instance.currentUser!.uid;
       await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -51,7 +53,7 @@ class SessionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final uid = athleteUid ?? FirebaseAuth.instance.currentUser!.uid;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -60,7 +62,11 @@ class SessionCard extends StatelessWidget {
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => SessionDetailScreen(session: session),
+              builder: (_) => SessionDetailScreen(
+                session: session,
+                readOnly: readOnly,
+                athleteUid: athleteUid,
+              ),
             ),
           );
         },
@@ -79,11 +85,12 @@ class SessionCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                    onPressed: () => _deleteSession(context),
-                    tooltip: 'Delete Session',
-                  ),
+                  if (!readOnly)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                      onPressed: () => _deleteSession(context),
+                      tooltip: 'Delete Session',
+                    ),
                 ],
               ),
               Row(

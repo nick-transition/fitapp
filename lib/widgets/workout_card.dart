@@ -8,8 +8,9 @@ import 'video_player.dart';
 class WorkoutCard extends StatefulWidget {
   final Workout workout;
   final bool readOnly;
+  final String? athleteUid;
 
-  const WorkoutCard({super.key, required this.workout, this.readOnly = false});
+  const WorkoutCard({super.key, required this.workout, this.readOnly = false, this.athleteUid});
 
   @override
   State<WorkoutCard> createState() => _WorkoutCardState();
@@ -105,7 +106,10 @@ class _WorkoutCardState extends State<WorkoutCard> {
                   icon: const Icon(Icons.open_in_new, size: 16),
                   label: const Text('View Details'),
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => WorkoutDetailScreen(workout: widget.workout)),
+                    MaterialPageRoute(builder: (_) => WorkoutDetailScreen(
+                      workout: widget.workout,
+                      readOnly: widget.readOnly,
+                    )),
                   ),
                 ),
                 if (!widget.readOnly) ...[

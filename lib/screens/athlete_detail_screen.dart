@@ -3,9 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/workout_program.dart';
 import '../models/workout.dart';
 import '../models/workout_session.dart';
+import '../models/workout_plan.dart';
 import '../widgets/workout_card.dart';
-import '../widgets/video_player.dart';
-import '../widgets/recorded_video_tile.dart';
+import '../widgets/plan_card.dart';
+import '../widgets/session_card.dart';
+import 'session_detail_screen.dart';
 
 class AthleteDetailScreen extends StatelessWidget {
   final String athleteUid;
@@ -20,29 +22,34 @@ class AthleteDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: Text(athleteName),
           bottom: const TabBar(
+            isScrollable: true,
             tabs: [
               Tab(icon: Icon(Icons.folder_copy), text: 'Programs'),
-              Tab(icon: Icon(Icons.fitness_center), text: 'Workouts'),
+              Tab(icon: Icon(Icons.assignment), text: 'Plans'),
               Tab(icon: Icon(Icons.history), text: 'Sessions'),
+              Tab(icon: Icon(Icons.calendar_month), text: 'Calendar'),
             ],
           ),
         ),
         body: TabBarView(
           children: [
             _AthleteProgramsTab(athleteUid: athleteUid),
-            _AthleteWorkoutsTab(athleteUid: athleteUid),
+            _AthletePlansTab(athleteUid: athleteUid),
             _AthleteSessionsTab(athleteUid: athleteUid),
+            _AthleteCalendarTab(athleteUid: athleteUid),
           ],
         ),
       ),
     );
   }
 }
+
+// ── Programs tab ──────────────────────────────────────────────────────────────
 
 class _AthleteProgramsTab extends StatelessWidget {
   final String athleteUid;
@@ -135,7 +142,11 @@ class _ProgramTile extends StatelessWidget {
                 children: docs.map((doc) {
                   final workout = Workout.fromMap(
                       doc.id, doc.data() as Map<String, dynamic>);
-                  return _WorkoutExpansionTile(workout: workout);
+                  return WorkoutCard(
+                    workout: workout,
+                    readOnly: true,
+                    athleteUid: athleteUid,
+                  );
                 }).toList(),
               );
             },
@@ -146,78 +157,11 @@ class _ProgramTile extends StatelessWidget {
   }
 }
 
-class _WorkoutExpansionTile extends StatelessWidget {
-  final Workout workout;
-  const _WorkoutExpansionTile({required this.workout});
+// ── Plans tab ─────────────────────────────────────────────────────────────────
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ExpansionTile(
-      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-      leading: const Icon(Icons.fitness_center, size: 18, color: Colors.teal),
-      title: Text(workout.name, style: const TextStyle(fontSize: 14)),
-      subtitle: Text(
-        '${workout.exercises.length} exercise(s) · ${workout.type}${workout.schedule != null ? ' · ${workout.schedule}' : ''}',
-        style: theme.textTheme.bodySmall,
-      ),
-      children: workout.exercises.isEmpty
-          ? [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(32, 4, 16, 12),
-                child: Text('No exercises defined',
-                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
-              ),
-            ]
-          : workout.exercises.map((ex) => _AthleteExerciseRow(ex: ex)).toList(),
-    );
-  }
-}
-
-class _AthleteExerciseRow extends StatelessWidget {
-  final dynamic ex;
-  const _AthleteExerciseRow({required this.ex});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasVideo = ex.videoUrl != null && (ex.videoUrl as String).isNotEmpty;
-    final hasNotes = ex.notes != null && (ex.notes as String).isNotEmpty;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '• ${ex.name}  ${ex.sets}×${ex.reps ?? '—'}${ex.weight != null ? ' @ ${ex.weight}' : ''}',
-            style: theme.textTheme.bodySmall,
-          ),
-          if (hasVideo)
-            VideoLinkTile(
-              url: ex.videoUrl as String,
-              title: 'Reference: ${ex.name}',
-            ),
-          if (hasNotes)
-            Padding(
-              padding: const EdgeInsets.only(left: 10, top: 2),
-              child: Text(
-                ex.notes as String,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AthleteWorkoutsTab extends StatelessWidget {
+class _AthletePlansTab extends StatelessWidget {
   final String athleteUid;
-  const _AthleteWorkoutsTab({required this.athleteUid});
+  const _AthletePlansTab({required this.athleteUid});
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +169,7 @@ class _AthleteWorkoutsTab extends StatelessWidget {
       stream: FirebaseFirestore.instance
           .collection('users')
           .doc(athleteUid)
-          .collection('workouts')
+          .collection('plans')
           .orderBy('updatedAt', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
@@ -241,9 +185,9 @@ class _AthleteWorkoutsTab extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.fitness_center, size: 64, color: Colors.grey),
+                Icon(Icons.assignment, size: 64, color: Colors.grey),
                 SizedBox(height: 16),
-                Text('No workouts', style: TextStyle(color: Colors.grey)),
+                Text('No plans', style: TextStyle(color: Colors.grey)),
               ],
             ),
           );
@@ -252,9 +196,9 @@ class _AthleteWorkoutsTab extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           itemCount: docs.length,
           itemBuilder: (context, index) {
-            final workout = Workout.fromMap(
+            final plan = WorkoutPlan.fromMap(
                 docs[index].id, docs[index].data() as Map<String, dynamic>);
-            return WorkoutCard(workout: workout, readOnly: true);
+            return PlanCard(plan: plan, readOnly: true);
           },
         );
       },
@@ -262,22 +206,14 @@ class _AthleteWorkoutsTab extends StatelessWidget {
   }
 }
 
+// ── Sessions tab ──────────────────────────────────────────────────────────────
+
 class _AthleteSessionsTab extends StatelessWidget {
   final String athleteUid;
   const _AthleteSessionsTab({required this.athleteUid});
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'Unknown date';
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('users')
@@ -312,103 +248,10 @@ class _AthleteSessionsTab extends StatelessWidget {
           itemBuilder: (context, index) {
             final session = WorkoutSession.fromMap(
                 docs[index].id, docs[index].data() as Map<String, dynamic>);
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: ExpansionTile(
-                leading: CircleAvatar(
-                  backgroundColor: session.isCompleted
-                      ? Colors.teal.withAlpha(30)
-                      : Colors.orange.withAlpha(30),
-                  child: Icon(
-                    session.isCompleted ? Icons.check : Icons.schedule,
-                    color: session.isCompleted ? Colors.teal : Colors.orange,
-                    size: 20,
-                  ),
-                ),
-                title: Text(
-                  session.planName ?? 'Quick Workout',
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  session.dayName != null
-                      ? '${session.dayName} · ${_formatDate(session.startedAt)}'
-                      : _formatDate(session.startedAt),
-                ),
-                trailing: session.isCompleted
-                    ? const Chip(
-                        label: Text('Done',
-                            style: TextStyle(fontSize: 11, color: Colors.white)),
-                        backgroundColor: Colors.teal,
-                        padding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                      )
-                    : null,
-                children: [
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(athleteUid)
-                        .collection('sessions')
-                        .doc(session.id)
-                        .collection('entries')
-                        .orderBy('order')
-                        .snapshots(),
-                    builder: (context, entrySnapshot) {
-                      if (entrySnapshot.connectionState == ConnectionState.waiting) {
-                        return const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: Center(child: SizedBox(
-                            width: 16, height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )),
-                        );
-                      }
-                      if (entrySnapshot.hasError) {
-                        return Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                          child: Text('Error loading entries: ${entrySnapshot.error}',
-                              style: theme.textTheme.bodySmall
-                                  ?.copyWith(color: Colors.red)),
-                        );
-                      }
-                      final entryDocs = entrySnapshot.data?.docs ?? [];
-                      if (entryDocs.isEmpty) {
-                        return Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                          child: Text('No exercises recorded',
-                              style: theme.textTheme.bodySmall
-                                  ?.copyWith(color: Colors.grey)),
-                        );
-                      }
-                      return Column(
-                        children: entryDocs.map((doc) {
-                          final entry = SessionEntry.fromMap(
-                              doc.id, doc.data() as Map<String, dynamic>);
-                          return _SessionEntryTile(entry: entry);
-                        }).toList(),
-                      );
-                    },
-                  ),
-                  if (session.notes != null && session.notes!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.notes, size: 14, color: Colors.grey),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(session.notes!,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                    color: Colors.grey)),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
+            return SessionCard(
+              session: session,
+              readOnly: true,
+              athleteUid: athleteUid,
             );
           },
         );
@@ -417,47 +260,393 @@ class _AthleteSessionsTab extends StatelessWidget {
   }
 }
 
-class _SessionEntryTile extends StatelessWidget {
-  final SessionEntry entry;
-  const _SessionEntryTile({required this.entry});
+// ── Calendar tab ──────────────────────────────────────────────────────────────
+
+class _AthleteCalendarTab extends StatefulWidget {
+  final String athleteUid;
+  const _AthleteCalendarTab({required this.athleteUid});
+
+  @override
+  State<_AthleteCalendarTab> createState() => _AthleteCalendarTabState();
+}
+
+class _AthleteCalendarTabState extends State<_AthleteCalendarTab> {
+  DateTime _focusedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  DateTime _selectedDate = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+  );
+
+  void _changeMonth(int delta) {
+    setState(() {
+      final newFocusedMonth = DateTime(
+        _focusedMonth.year,
+        _focusedMonth.month + delta,
+      );
+      final daysInMonth = DateUtils.getDaysInMonth(
+        newFocusedMonth.year,
+        newFocusedMonth.month,
+      );
+
+      _focusedMonth = newFocusedMonth;
+      _selectedDate = DateTime(
+        newFocusedMonth.year,
+        newFocusedMonth.month,
+        _selectedDate.day > daysInMonth ? daysInMonth : _selectedDate.day,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.athleteUid)
+          .collection('sessions')
+          .orderBy('startedAt', descending: true)
+          .limit(200)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+        final sessions = docs.map((doc) {
+          return WorkoutSession.fromMap(
+            doc.id,
+            doc.data() as Map<String, dynamic>,
+          );
+        }).toList();
+
+        // Group sessions by calendar date
+        final sessionsByDate = <DateTime, List<WorkoutSession>>{};
+        for (final session in sessions) {
+          final date = session.calendarDate;
+          if (date == null) continue;
+          final key = DateTime(date.year, date.month, date.day);
+          sessionsByDate.putIfAbsent(key, () => []).add(session);
+        }
+
+        // Sessions for selected date
+        final selectedSessions = sessionsByDate[_selectedDate] ?? [];
+
+        return Column(
+          children: [
+            _MonthHeader(
+              month: _focusedMonth,
+              onPrevious: () => _changeMonth(-1),
+              onNext: () => _changeMonth(1),
+            ),
+            _CalendarGrid(
+              month: _focusedMonth,
+              selectedDate: _selectedDate,
+              sessionsByDate: sessionsByDate,
+              onDateSelected: (date) => setState(() => _selectedDate = date),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: _CalendarDayList(
+                sessions: selectedSessions,
+                athleteUid: widget.athleteUid,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MonthHeader extends StatelessWidget {
+  final DateTime month;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+
+  const _MonthHeader({
+    required this.month,
+    required this.onPrevious,
+    required this.onNext,
+  });
+
+  static const _monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed: onPrevious,
+          ),
+          Text(
+            '${_monthNames[month.month - 1]} ${month.year}',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: onNext,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CalendarGrid extends StatelessWidget {
+  final DateTime month;
+  final DateTime selectedDate;
+  final Map<DateTime, List<WorkoutSession>> sessionsByDate;
+  final ValueChanged<DateTime> onDateSelected;
+
+  const _CalendarGrid({
+    required this.month,
+    required this.selectedDate,
+    required this.sessionsByDate,
+    required this.onDateSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasRecorded =
-        entry.recordedVideoUrl != null && entry.recordedVideoUrl!.isNotEmpty;
+    final today = DateTime.now();
+    final todayKey = DateTime(today.year, today.month, today.day);
+
+    final firstDay = DateTime(month.year, month.month, 1);
+    final lastDay = DateTime(month.year, month.month + 1, 0);
+    final startOffset = (firstDay.weekday - 1) % 7;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(entry.exerciseName,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          ...entry.sets.asMap().entries.map((e) => Padding(
-                padding: const EdgeInsets.only(left: 12, top: 2),
-                child: Text(
-                  'Set ${e.key + 1}: ${e.value.reps} reps'
-                  '${e.value.weight != null ? ' @ ${e.value.weight}' : ''}',
-                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+          // Day-of-week headers
+          Row(
+            children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                .map((d) => Expanded(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            d,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ),
+          // Calendar cells
+          ...List.generate(
+            ((startOffset + lastDay.day + 6) ~/ 7),
+            (week) {
+              return Row(
+                children: List.generate(7, (weekday) {
+                  final dayIndex = week * 7 + weekday - startOffset + 1;
+                  if (dayIndex < 1 || dayIndex > lastDay.day) {
+                    return const Expanded(child: SizedBox(height: 44));
+                  }
+                  final date = DateTime(month.year, month.month, dayIndex);
+                  final sessions = sessionsByDate[date];
+                  final isSelected = date == selectedDate;
+                  final isToday = date == todayKey;
+                  final hasCompleted =
+                      sessions?.any((s) => s.isCompleted) ?? false;
+                  final hasScheduled =
+                      sessions?.any((s) => s.isScheduled) ?? false;
+
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => onDateSelected(date),
+                      child: Container(
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? theme.colorScheme.primary.withAlpha(40)
+                              : null,
+                          border: isToday
+                              ? Border.all(
+                                  color: theme.colorScheme.primary, width: 1.5)
+                              : null,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '$dayIndex',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight:
+                                    isSelected ? FontWeight.bold : null,
+                                color: isSelected
+                                    ? theme.colorScheme.primary
+                                    : null,
+                              ),
+                            ),
+                            if (hasCompleted || hasScheduled)
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (hasCompleted)
+                                    Container(
+                                      width: 5,
+                                      height: 5,
+                                      margin: const EdgeInsets.only(top: 2),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                    ),
+                                  if (hasCompleted && hasScheduled)
+                                    const SizedBox(width: 2),
+                                  if (hasScheduled)
+                                    Container(
+                                      width: 5,
+                                      height: 5,
+                                      margin: const EdgeInsets.only(top: 2),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: theme.colorScheme.tertiary,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              );
+            },
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+}
+
+class _CalendarDayList extends StatelessWidget {
+  final List<WorkoutSession> sessions;
+  final String athleteUid;
+
+  const _CalendarDayList({required this.sessions, required this.athleteUid});
+
+  @override
+  Widget build(BuildContext context) {
+    if (sessions.isEmpty) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.event_available, size: 48, color: Colors.grey[600]),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No sessions on this day',
+                      style: TextStyle(color: Colors.grey[500]),
+                    ),
+                  ],
                 ),
-              )),
-          if (entry.notes != null && entry.notes!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(left: 12, top: 2),
-              child: Text(entry.notes!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                      fontStyle: FontStyle.italic, color: Colors.grey)),
-            ),
-          if (hasRecorded)
-            Padding(
-              padding: const EdgeInsets.only(left: 4, top: 4),
-              child: RecordedVideoTile(
-                url: entry.recordedVideoUrl!,
-                title: 'Athlete Clip',
               ),
             ),
-        ],
+          );
+        },
+      );
+    }
+
+    // Sort: scheduled first, then by time
+    final sorted = List<WorkoutSession>.from(sessions)
+      ..sort((a, b) {
+        if (a.isScheduled != b.isScheduled) {
+          return a.isScheduled ? -1 : 1;
+        }
+        final aTime = a.calendarDate ?? DateTime(0);
+        final bTime = b.calendarDate ?? DateTime(0);
+        return aTime.compareTo(bTime);
+      });
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: sorted.length,
+      itemBuilder: (context, index) {
+        final session = sorted[index];
+        return _CalendarSessionTile(
+          session: session,
+          athleteUid: athleteUid,
+        );
+      },
+    );
+  }
+}
+
+class _CalendarSessionTile extends StatelessWidget {
+  final WorkoutSession session;
+  final String athleteUid;
+
+  const _CalendarSessionTile({required this.session, required this.athleteUid});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isScheduled = session.isScheduled;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ListTile(
+        leading: Icon(
+          isScheduled ? Icons.event : Icons.fitness_center,
+          color: isScheduled
+              ? theme.colorScheme.tertiary
+              : theme.colorScheme.primary,
+        ),
+        title: Text(
+          session.planName ?? 'Quick Workout',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          isScheduled ? 'Scheduled' : 'Completed',
+          style: TextStyle(
+            color: isScheduled
+                ? theme.colorScheme.tertiary
+                : theme.colorScheme.primary,
+            fontSize: 12,
+          ),
+        ),
+        trailing: session.journalEntry != null
+            ? Icon(Icons.book, size: 18, color: Colors.grey[500])
+            : null,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => SessionDetailScreen(
+                session: session,
+                readOnly: true,
+                athleteUid: athleteUid,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
