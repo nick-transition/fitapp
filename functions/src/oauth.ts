@@ -11,6 +11,26 @@ const FIREBASE_CONFIG = {
 };
 
 const CODE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+
+function isRedirectUriAllowed(clientData: Record<string, unknown>, redirectUri: string): boolean {
+  const redirectUris = clientData.redirectUris;
+  return Array.isArray(redirectUris) && redirectUris.includes(redirectUri);
+}
+
+function isTimingSafeMatch(storedSecret: unknown, providedSecret: unknown): boolean {
+  if (typeof storedSecret !== 'string' || typeof providedSecret !== 'string') {
+    return false;
+  }
+
+  const storedBuffer = Buffer.from(storedSecret);
+  const providedBuffer = Buffer.from(providedSecret);
+  if (storedBuffer.length !== providedBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(storedBuffer, providedBuffer);
+}
 
 function loginPage(clientId: string, redirectUri: string, state: string, scope: string): string {
   const apiKey = FIREBASE_API_KEY.value();
@@ -146,6 +166,11 @@ export async function handleOAuthRequest(req: any, res: any) {
         res.status(400).json({ error: 'Invalid client_id' });
         return;
       }
+      const clientData = clientDoc.data() as Record<string, unknown>;
+      if (!isRedirectUriAllowed(clientData, redirect_uri)) {
+        res.status(400).json({ error: 'Invalid redirect_uri' });
+        return;
+      }
 
       const params = new URLSearchParams({ 
         client_id, 
@@ -166,6 +191,17 @@ export async function handleOAuthRequest(req: any, res: any) {
         return;
       }
 
+      const clientDoc = await admin.firestore().doc(`oauthClients/${client_id}`).get();
+      if (!clientDoc.exists) {
+        res.status(400).json({ error: 'Invalid client_id' });
+        return;
+      }
+      const clientData = clientDoc.data() as Record<string, unknown>;
+      if (!isRedirectUriAllowed(clientData, redirect_uri)) {
+        res.status(400).json({ error: 'Invalid redirect_uri' });
+        return;
+      }
+
       const html = loginPage(client_id, redirect_uri, state, scope || '');
       res.status(200).send(html);
       return;
@@ -183,6 +219,11 @@ export async function handleOAuthRequest(req: any, res: any) {
       const clientDoc = await admin.firestore().doc(`oauthClients/${clientId}`).get();
       if (!clientDoc.exists) {
         res.status(400).json({ error: 'Invalid client_id' });
+        return;
+      }
+      const clientData = clientDoc.data() as Record<string, unknown>;
+      if (!isRedirectUriAllowed(clientData, redirectUri)) {
+        res.status(400).json({ error: 'Invalid redirect_uri' });
         return;
       }
 
@@ -229,7 +270,8 @@ export async function handleOAuthRequest(req: any, res: any) {
 
       // Validate client credentials
       const clientDoc = await admin.firestore().doc(`oauthClients/${client_id}`).get();
-      if (!clientDoc.exists || clientDoc.data()!.secret !== client_secret) {
+      const clientData = clientDoc.data() as Record<string, unknown> | undefined;
+      if (!clientDoc.exists || !clientData || !isTimingSafeMatch(clientData.secret, client_secret)) {
         res.status(401).json({ error: 'invalid_client' });
         return;
       }
@@ -268,6 +310,7 @@ export async function handleOAuthRequest(req: any, res: any) {
         clientId: client_id,
         scope: codeData.scope, // Inherit scope from authorization code
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + TOKEN_TTL_MS),
       });
 
       // Delete used code
@@ -276,6 +319,7 @@ export async function handleOAuthRequest(req: any, res: any) {
       res.status(200).json({
         access_token: accessToken,
         token_type: 'Bearer',
+        expires_in: Math.floor(TOKEN_TTL_MS / 1000),
         scope: codeData.scope,
       });
       return;

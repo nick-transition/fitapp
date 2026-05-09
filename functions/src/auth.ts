@@ -16,6 +16,15 @@ export interface AuthContext {
   scopes: string[];
 }
 
+const OAUTH_TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+
+function timestampToMillis(value: unknown): number | undefined {
+  if (typeof (value as { toMillis?: unknown } | undefined)?.toMillis === 'function') {
+    return (value as { toMillis: () => number }).toMillis();
+  }
+  return undefined;
+}
+
 /**
  * Resolves the authenticated user and their scopes from the request.
  *
@@ -48,6 +57,14 @@ export async function resolveUser(req: Request): Promise<AuthContext> {
   const oauthDoc = await admin.firestore().doc(`oauthTokens/${token}`).get();
   if (oauthDoc.exists) {
     const data = oauthDoc.data()!;
+    const createdAtMs = timestampToMillis(data.createdAt);
+    const expiresAtMs = timestampToMillis(data.expiresAt)
+      ?? (createdAtMs !== undefined ? createdAtMs + OAUTH_TOKEN_TTL_MS : undefined);
+    if (expiresAtMs !== undefined && Date.now() >= expiresAtMs) {
+      await oauthDoc.ref.delete();
+      throw new Error('Invalid credentials');
+    }
+
     let scopes = (data.scope as string || 'profile:read workout:read').split(' ');
     
     // If Claude requested the generic 'claudeai' scope, grant full workout access
