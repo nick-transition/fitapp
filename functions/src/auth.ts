@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import { Request } from 'firebase-functions/v2/https';
+import { isOAuthTokenExpired } from './oauthSecurity.js';
 
 /**
  * Resolves the authenticated user from the request.
@@ -48,6 +49,11 @@ export async function resolveUser(req: Request): Promise<AuthContext> {
   const oauthDoc = await admin.firestore().doc(`oauthTokens/${token}`).get();
   if (oauthDoc.exists) {
     const data = oauthDoc.data()!;
+    if (isOAuthTokenExpired(data)) {
+      await admin.firestore().doc(`oauthTokens/${token}`).delete();
+      throw new Error('Invalid credentials');
+    }
+
     let scopes = (data.scope as string || 'profile:read workout:read').split(' ');
     
     // If Claude requested the generic 'claudeai' scope, grant full workout access
