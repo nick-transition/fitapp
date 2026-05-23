@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 import { defineSecret } from 'firebase-functions/params';
+import { isClientSecretValid } from './utils/timingSafeCompare.js';
 
 // Define the secret (it will be injected from Secret Manager)
 export const FIREBASE_API_KEY = defineSecret('APP_FIREBASE_API_KEY');
@@ -227,9 +228,14 @@ export async function handleOAuthRequest(req: any, res: any) {
         return;
       }
 
-      // Validate client credentials
+      // Validate client credentials using constant-time comparison
       const clientDoc = await admin.firestore().doc(`oauthClients/${client_id}`).get();
-      if (!clientDoc.exists || clientDoc.data()!.secret !== client_secret) {
+      const clientData = clientDoc.data();
+      if (
+        !clientDoc.exists ||
+        !clientData ||
+        !isClientSecretValid(clientData.secret, client_secret)
+      ) {
         res.status(401).json({ error: 'invalid_client' });
         return;
       }
