@@ -97,6 +97,9 @@ fitapp/
 # Or run Playwright tests individually (requires built web app + running emulators)
 flutter build web --dart-define=USE_EMULATORS=true
 npx playwright test e2e/ --reporter=list
+
+# Firestore security-rules tests (starts its own emulator)
+npm run test:rules
 ```
 
 E2e tests record video of each test run and capture screenshots of every major screen. Videos and screenshots are uploaded as CI artifacts on every PR.
