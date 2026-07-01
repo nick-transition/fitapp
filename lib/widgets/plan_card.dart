@@ -6,14 +6,15 @@ import 'video_player.dart';
 
 class PlanCard extends StatelessWidget {
   final WorkoutPlan plan;
+  final bool readOnly;
 
-  const PlanCard({super.key, required this.plan});
+  const PlanCard({super.key, required this.plan, this.readOnly = false});
 
   Future<void> _deletePlan(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Workout'),
+        title: const Text('Delete Plan'),
         content: Text('Delete "${plan.name}"? This cannot be undone.'),
         actions: [
           TextButton(
@@ -54,13 +55,14 @@ class PlanCard extends StatelessWidget {
             Expanded(
               child: Text(plan.name, style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-              onPressed: () => _deletePlan(context),
-              tooltip: 'Delete Workout',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
+            if (!readOnly)
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                onPressed: () => _deletePlan(context),
+                tooltip: 'Delete Plan',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
           ],
         ),
         subtitle: Text(

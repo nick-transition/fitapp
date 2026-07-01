@@ -1,149 +1,150 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout.dart';
 import '../widgets/video_player.dart';
 import 'workout_edit_screen.dart';
 import 'session_edit_screen.dart';
 
-class WorkoutDetailScreen extends StatefulWidget {
+class WorkoutDetailScreen extends StatelessWidget {
   final Workout workout;
+  final bool readOnly;
 
-  const WorkoutDetailScreen({super.key, required this.workout});
-
-  @override
-  State<WorkoutDetailScreen> createState() => _WorkoutDetailScreenState();
-}
-
-class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
-  final Map<String, GlobalKey<VideoLinkTileState>> _videoKeys = {};
-
-  GlobalKey<VideoLinkTileState> _getVideoKey(String id) {
-    return _videoKeys.putIfAbsent(id, () => GlobalKey<VideoLinkTileState>());
-  }
+  const WorkoutDetailScreen({
+    super.key,
+    required this.workout,
+    this.readOnly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final user = FirebaseAuth.instance.currentUser;
-    
-    if (user == null) {
-      return const Scaffold(body: Center(child: Text('Not authenticated')));
-    }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.workout.name),
+        title: Text(workout.name),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => WorkoutEditScreen(workout: widget.workout)),
+          if (!readOnly)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit workout',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => WorkoutEditScreen(workout: workout)),
+                );
+              },
             ),
-          ),
         ],
       ),
       body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Chip(
-                      label: Text(widget.workout.type),
-                      avatar: const Icon(Icons.fitness_center, size: 16),
-                    ),
-                    if (widget.workout.schedule != null) ...[
-                      const SizedBox(width: 8),
-                      Chip(
-                        label: Text(widget.workout.schedule!),
-                        avatar: const Icon(Icons.calendar_today, size: 16),
-                      ),
-                    ],
-                    const Spacer(),
-                    FilledButton.icon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SessionEditScreen(workout: widget.workout),
-                        ),
-                      ),
-                      icon: const Icon(Icons.play_arrow, size: 18),
-                      label: const Text('Start'),
-                    ),
-                  ],
+          if (workout.description != null && workout.description!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                workout.description!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
-                if (widget.workout.description != null && widget.workout.description!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.workout.description!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-                if (widget.workout.videoUrl != null && widget.workout.videoUrl!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  VideoLinkTile(
-                    key: _getVideoKey('workout_${widget.workout.id}'),
-                    url: widget.workout.videoUrl, 
-                    title: 'Workout Video'
-                  ),
-                ],
-              ],
+              ),
             ),
-          ),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text('Exercises', style: theme.textTheme.titleLarge),
-          ),
-          ...widget.workout.exercises.map((ex) => Column(
-            children: [
-              ListTile(
-                title: Text(ex.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Column(
+          if (workout.videoUrl != null && workout.videoUrl!.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: VideoLinkTile(
+                url: workout.videoUrl,
+                title: 'Workout Reference Video',
+              ),
+            ),
+          ],
+          if (!readOnly)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => SessionEditScreen(workout: workout),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Start Session'),
+              ),
+            ),
+          ...workout.exercises.asMap().entries.map((entry) {
+            final i = entry.key;
+            final ex = entry.value;
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${ex.sets} sets ${ex.reps != null ? "x ${ex.reps} reps" : ""} ${ex.weight != null ? "@ ${ex.weight}" : ""}'),
-                    if (ex.notes != null && ex.notes!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          ex.notes!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontStyle: FontStyle.italic,
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 14,
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                          child: Text(
+                            '${i + 1}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            ex.name,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text(
+                          '${ex.sets} sets × ${ex.reps ?? '—'} reps',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                        if (ex.weight != null) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '@ ${ex.weight}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (ex.notes != null && ex.notes!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        ex.notes!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
+                    ],
+                    if (ex.videoUrl != null && ex.videoUrl!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      VideoLinkTile(
+                        url: ex.videoUrl,
+                        title: ex.name,
+                      ),
+                    ],
                   ],
                 ),
-                trailing: ex.videoUrl != null 
-                    ? IconButton(
-                        icon: const Icon(Icons.videocam_outlined, color: Colors.teal),
-                        onPressed: () => _getVideoKey(ex.id).currentState?.toggleExpand(),
-                      )
-                    : null,
-                onTap: ex.videoUrl != null ? () => _getVideoKey(ex.id).currentState?.toggleExpand() : null,
-                isThreeLine: ex.notes != null && ex.notes!.isNotEmpty,
               ),
-              if (ex.videoUrl != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
-                  child: VideoLinkTile(
-                    key: _getVideoKey(ex.id),
-                    url: ex.videoUrl, 
-                    title: 'Reference: ${ex.name}'
-                  ),
-                ),
-              const Divider(indent: 16, endIndent: 16),
-            ],
-          )),
+            );
+          }),
         ],
       ),
     );
