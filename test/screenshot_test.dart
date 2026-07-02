@@ -1,3 +1,9 @@
+// Golden screenshots are generated on macOS; pixel output can differ on other
+// platforms, so these tests are excluded in CI (--exclude-tags golden).
+// Regenerate with: flutter test --update-goldens test/screenshot_test.dart
+@Tags(['golden'])
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fitapp/screens/marketing_screen.dart';

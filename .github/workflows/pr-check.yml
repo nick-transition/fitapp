@@ -22,5 +22,10 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos
 
+      - name: Test
+        # Golden screenshots are generated on macOS and don't match
+        # pixel-for-pixel on Linux runners, so they only run locally.
+        run: flutter test --exclude-tags golden test/
+
       - name: Build web
         run: flutter build web
