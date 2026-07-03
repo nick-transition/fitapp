@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
@@ -12,6 +13,14 @@ import 'screens/login_screen.dart';
 import 'screens/marketing_screen.dart';
 
 const _useEmulators = bool.fromEnvironment('USE_EMULATORS');
+
+// Forces the semantics tree on Flutter web so e2e tests (Playwright) can
+// target widgets through the accessibility DOM instead of coordinates.
+const _enableSemantics = bool.fromEnvironment('ENABLE_SEMANTICS');
+
+void _maybeEnableSemantics() {
+  if (_enableSemantics) SemanticsBinding.instance.ensureSemantics();
+}
 
 Future<void> _connectEmulators() async {
   const host = 'localhost';
@@ -25,7 +34,8 @@ void main() {
     runZonedGuarded(
       () async {
         WidgetsFlutterBinding.ensureInitialized();
-        
+        _maybeEnableSemantics();
+
         // Initialize MCP toolkit for debugging and screenshots
         MCPToolkitBinding.instance
           ..initialize()
@@ -48,6 +58,7 @@ void main() {
 
 Future<void> _startApp() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _maybeEnableSemantics();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
