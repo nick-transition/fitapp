@@ -1,0 +1,38 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime(),
+);
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+<BaseLayout title="Blog" description="News, training ideas, and product updates from FitApp.">
+  <section class="page-head container">
+    <p class="eyebrow">Blog</p>
+    <h1>From the FitApp team</h1>
+    <p>Training ideas, product updates, and notes from building in the open.</p>
+  </section>
+
+  <section class="container">
+    {posts.length === 0 ? (
+      <p class="post-meta">No posts yet — check back soon.</p>
+    ) : (
+      <ul class="post-list">
+        {posts.map((post) => (
+          <li>
+            <a href={`/blog/${post.id}/`}>
+              <article class="post-item">
+                <p class="post-meta">{fmt(post.data.pubDate)} · {post.data.author}</p>
+                <h3>{post.data.title}</h3>
+                <p>{post.data.description}</p>
+              </article>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</BaseLayout>
