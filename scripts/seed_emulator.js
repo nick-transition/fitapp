@@ -206,31 +206,47 @@ async function seed() {
       startedAt: ts(yesterday),
       completedAt: ts(yesterdayEnd),
       notes: 'Felt strong today, upped squat weight',
-      entries: [
-        {
-          exerciseName: 'Back Squat',
-          order: 0,
-          sets: [
-            { reps: 6, weight: '225 lbs' },
-            { reps: 6, weight: '225 lbs' },
-            { reps: 5, weight: '225 lbs' },
-            { reps: 5, weight: '225 lbs' },
-          ],
-        },
-        {
-          exerciseName: 'Romanian Deadlift',
-          order: 1,
-          sets: [
-            { reps: 8, weight: '185 lbs' },
-            { reps: 8, weight: '185 lbs' },
-            { reps: 7, weight: '185 lbs' },
-          ],
-          notes: 'Focus on hip hinge',
-        },
-      ],
     }
   );
   created.push(`users/${USER_UID}/sessions/${SESSION_ID_1}`);
+
+  // The app reads exercises from the session's `entries` subcollection
+  // (ordered by `order`), not from a field on the session document.
+  const sessionEntries = [
+    {
+      exerciseName: 'Back Squat',
+      order: 0,
+      sets: [
+        { reps: 6, weight: '225 lbs' },
+        { reps: 6, weight: '225 lbs' },
+        { reps: 5, weight: '225 lbs' },
+        { reps: 5, weight: '225 lbs' },
+      ],
+    },
+    {
+      exerciseName: 'Romanian Deadlift',
+      order: 1,
+      sets: [
+        { reps: 8, weight: '185 lbs' },
+        { reps: 8, weight: '185 lbs' },
+        { reps: 7, weight: '185 lbs' },
+      ],
+      notes: 'Focus on hip hinge',
+    },
+  ];
+  sessionEntries.forEach((entry, i) => {
+    batch.set(
+      db
+        .collection('users')
+        .doc(USER_UID)
+        .collection('sessions')
+        .doc(SESSION_ID_1)
+        .collection('entries')
+        .doc(`entry-${i}`),
+      entry
+    );
+    created.push(`users/${USER_UID}/sessions/${SESSION_ID_1}/entries/entry-${i}`);
+  });
 
   // ── Scheduled Session (tomorrow) ──
   const tomorrow = new Date();

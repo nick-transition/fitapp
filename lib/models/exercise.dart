@@ -10,6 +10,7 @@ class Exercise {
   final int order;
   final List<String> tags;
   final String? videoUrl; // YouTube or reference link
+  final String? libraryExerciseId; // Back-reference to /exerciseLibrary entry
 
   Exercise({
     required this.id,
@@ -23,6 +24,7 @@ class Exercise {
     required this.order,
     this.tags = const [],
     this.videoUrl,
+    this.libraryExerciseId,
   });
 
   Map<String, dynamic> toMap() {
@@ -37,6 +39,7 @@ class Exercise {
       'order': order,
       'tags': tags,
       'videoUrl': videoUrl,
+      'libraryExerciseId': libraryExerciseId,
     };
   }
 
@@ -53,6 +56,7 @@ class Exercise {
       order: data['order'] ?? 0,
       tags: List<String>.from(data['tags'] ?? []),
       videoUrl: data['videoUrl'],
+      libraryExerciseId: data['libraryExerciseId'],
     );
   }
 }

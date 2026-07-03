@@ -38,6 +38,14 @@ service cloud.firestore {
       );
     }
 
+    // Global exercise library: any signed-in user can read; only admins
+    // (Firebase Auth custom claim `admin: true`) can write.
+    match /exerciseLibrary/{exerciseId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null &&
+        request.auth.token.admin == true;
+    }
+
     // Waitlist: unauthenticated users can submit their email; reads are blocked
     match /waitlist/{email} {
       allow create: if true;
