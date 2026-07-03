@@ -21,11 +21,19 @@ jobs:
         with:
           flutter-version: '3.41.x'
           channel: 'stable'
+          cache: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+
+      - name: Cache Firebase emulators
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}
 
       - name: Install Flutter dependencies
         run: flutter pub get
@@ -39,14 +47,15 @@ jobs:
       - name: Install Playwright and dependencies
         run: npm ci && npx playwright install --with-deps chromium
 
-      - name: Build web app with emulator support
-        run: flutter build web --dart-define=USE_EMULATORS=true
+      - name: Build web app with emulator support and semantics
+        run: flutter build web --dart-define=USE_EMULATORS=true --dart-define=ENABLE_SEMANTICS=true
 
       - name: Start Firebase emulators
         run: |
           firebase emulators:start --only auth,firestore --project fitapp-ns &
-          for i in $(seq 1 30); do
-            if curl -s http://localhost:9099/ > /dev/null 2>&1; then
+          for i in $(seq 1 60); do
+            if curl -s http://localhost:9099/ > /dev/null 2>&1 \
+              && curl -s http://localhost:8081/ > /dev/null 2>&1; then
               echo "Emulators ready"
               exit 0
             fi
@@ -55,25 +64,21 @@ jobs:
           echo "ERROR: Emulators failed to start"
           exit 1
 
-      - name: Seed emulator data
-        run: |
-          FIRESTORE_EMULATOR_HOST=localhost:8081 \
-          FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 \
-          node scripts/seed_emulator.js
-
+      # Seeding happens in Playwright's globalSetup (e2e/global-setup.ts),
+      # which clears the emulators and reseeds before every run.
       - name: Run Playwright e2e tests
-        run: npx playwright test e2e/ --reporter=list
+        run: npx playwright test --project=e2e
 
-      - name: Upload screenshots
+      - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: screenshots
-          path: screenshots/*.png
+          name: playwright-report
+          path: playwright-report/
 
-      - name: Upload test videos
+      - name: Upload failure traces and videos
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-videos
-          path: test-results/*/video.webm
+          name: test-results
+          path: test-results/
