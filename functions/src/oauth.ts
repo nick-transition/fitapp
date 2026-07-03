@@ -1,6 +1,12 @@
 import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 import { defineSecret } from 'firebase-functions/params';
+import {
+  OAUTH_ACCESS_TOKEN_EXPIRES_IN_SECONDS,
+  createOAuthTokenExpiry,
+  isClientSecretValid,
+  isRedirectUriAllowed,
+} from './oauthSecurity.js';
 
 // Define the secret (it will be injected from Secret Manager)
 export const FIREBASE_API_KEY = defineSecret('APP_FIREBASE_API_KEY');
@@ -146,6 +152,10 @@ export async function handleOAuthRequest(req: any, res: any) {
         res.status(400).json({ error: 'Invalid client_id' });
         return;
       }
+      if (!isRedirectUriAllowed(clientDoc.data()!, redirect_uri)) {
+        res.status(400).json({ error: 'Invalid redirect_uri' });
+        return;
+      }
 
       const params = new URLSearchParams({ 
         client_id, 
@@ -163,6 +173,15 @@ export async function handleOAuthRequest(req: any, res: any) {
       const { client_id, redirect_uri, state, scope } = req.query as Record<string, string>;
       if (!client_id || !redirect_uri || !state) {
         res.status(400).json({ error: 'Missing required parameters' });
+        return;
+      }
+      const clientDoc = await admin.firestore().doc(`oauthClients/${client_id}`).get();
+      if (!clientDoc.exists) {
+        res.status(400).json({ error: 'Invalid client_id' });
+        return;
+      }
+      if (!isRedirectUriAllowed(clientDoc.data()!, redirect_uri)) {
+        res.status(400).json({ error: 'Invalid redirect_uri' });
         return;
       }
 
@@ -183,6 +202,10 @@ export async function handleOAuthRequest(req: any, res: any) {
       const clientDoc = await admin.firestore().doc(`oauthClients/${clientId}`).get();
       if (!clientDoc.exists) {
         res.status(400).json({ error: 'Invalid client_id' });
+        return;
+      }
+      if (!isRedirectUriAllowed(clientDoc.data()!, redirectUri)) {
+        res.status(400).json({ error: 'Invalid redirect_uri' });
         return;
       }
 
@@ -229,7 +252,7 @@ export async function handleOAuthRequest(req: any, res: any) {
 
       // Validate client credentials
       const clientDoc = await admin.firestore().doc(`oauthClients/${client_id}`).get();
-      if (!clientDoc.exists || clientDoc.data()!.secret !== client_secret) {
+      if (!clientDoc.exists || !isClientSecretValid(clientDoc.data()!.secret, client_secret)) {
         res.status(401).json({ error: 'invalid_client' });
         return;
       }
@@ -268,6 +291,7 @@ export async function handleOAuthRequest(req: any, res: any) {
         clientId: client_id,
         scope: codeData.scope, // Inherit scope from authorization code
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        expiresAt: createOAuthTokenExpiry(),
       });
 
       // Delete used code
@@ -276,6 +300,7 @@ export async function handleOAuthRequest(req: any, res: any) {
       res.status(200).json({
         access_token: accessToken,
         token_type: 'Bearer',
+        expires_in: OAUTH_ACCESS_TOKEN_EXPIRES_IN_SECONDS,
         scope: codeData.scope,
       });
       return;
