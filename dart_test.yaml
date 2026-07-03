@@ -1,0 +1,3 @@
+tags:
+  golden:
+    description: "Golden-file screenshot tests. Platform-sensitive; excluded in CI."
