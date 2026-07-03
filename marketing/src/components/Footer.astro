@@ -1,0 +1,12 @@
+---
+import { SITE_TITLE, FOOTER_LINKS } from '../consts.ts';
+const year = new Date().getFullYear();
+---
+<footer class="site-footer">
+  <div class="container">
+    <div>© {year} {SITE_TITLE}. Built open source.</div>
+    <nav class="foot-links">
+      {FOOTER_LINKS.map((l) => <a href={l.href}>{l.label}</a>)}
+    </nav>
+  </div>
+</footer>

@@ -2,6 +2,17 @@
   "projects": {
     "default": "fitapp-ns"
   },
-  "targets": {},
+  "targets": {
+    "fitapp-ns": {
+      "hosting": {
+        "app": [
+          "fitapp-ns"
+        ],
+        "marketing": [
+          "fitapp-ns-marketing"
+        ]
+      }
+    }
+  },
   "etags": {}
 }

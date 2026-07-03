@@ -1,0 +1,12 @@
+---
+import { SITE_TITLE, NAV_LINKS, APP_URL } from '../consts.ts';
+---
+<header class="site-header">
+  <div class="container">
+    <a href="/" class="brand">Fit<span>App</span></a>
+    <nav class="nav">
+      {NAV_LINKS.map((l) => <a href={l.href}>{l.label}</a>)}
+      <a href={APP_URL} class="btn btn-primary">Open the app</a>
+    </nav>
+  </div>
+</header>

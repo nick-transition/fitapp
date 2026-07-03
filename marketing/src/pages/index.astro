@@ -1,0 +1,65 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { APP_URL, SITE_TAGLINE } from '../consts.ts';
+
+const athleteFeatures = [
+  { ico: '🏋️', title: 'Structured programs', body: 'Follow multi-day workout programs with clearly laid-out exercises, sets, and reps.' },
+  { ico: '📈', title: 'Per-set tracking', body: 'Log every set — reps, weight, and notes — and watch progress build session over session.' },
+  { ico: '🗓️', title: 'Calendar view', body: 'See scheduled and completed workouts at a glance so you never lose the thread.' },
+  { ico: '▶️', title: 'Inline form videos', body: 'YouTube reference clips embedded right beside each exercise, so form is never a guess.' },
+];
+
+const coachFeatures = [
+  { ico: '👥', title: 'Athlete overview', body: "See each athlete's programs, workouts, and full session history in one place." },
+  { ico: '🔗', title: 'Share via invite codes', body: 'Push a program to an athlete with a simple invite code — no spreadsheets.' },
+  { ico: '📊', title: 'Progress monitoring', body: 'Track how athletes are moving across sessions and adjust when it matters.' },
+];
+---
+<BaseLayout>
+  <section class="hero container">
+    <p class="eyebrow">Athletes + Coaches</p>
+    <h1>{SITE_TAGLINE}</h1>
+    <p class="lede">
+      FitApp connects athletes and coaches through structured workout programs,
+      per-set session tracking, and inline video references — on web, iOS, and Android.
+    </p>
+    <div class="cta-row">
+      <a href={APP_URL} class="btn btn-primary">Get started free</a>
+      <a href="/pricing/" class="btn btn-ghost">See pricing</a>
+    </div>
+  </section>
+
+  <section class="container">
+    <p class="eyebrow">For athletes</p>
+    <h2>Train with a plan, not a guess</h2>
+    <div class="grid">
+      {athleteFeatures.map((f) => (
+        <article class="card">
+          <div class="ico">{f.ico}</div>
+          <h3>{f.title}</h3>
+          <p>{f.body}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="container">
+    <p class="eyebrow">For coaches</p>
+    <h2>Coach more athletes, with less busywork</h2>
+    <div class="grid">
+      {coachFeatures.map((f) => (
+        <article class="card">
+          <div class="ico">{f.ico}</div>
+          <h3>{f.title}</h3>
+          <p>{f.body}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="container" style="text-align:center; padding: 4rem 0;">
+    <h2>Ready to train?</h2>
+    <p class="lede">Cross-platform, real-time, and free to start.</p>
+    <a href={APP_URL} class="btn btn-primary">Open the app</a>
+  </section>
+</BaseLayout>

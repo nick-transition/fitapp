@@ -1,0 +1,71 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { APP_URL } from '../consts.ts';
+
+const plans = [
+  {
+    name: 'Athlete',
+    price: 'Free',
+    unit: '',
+    featured: false,
+    features: [
+      'Follow shared workout programs',
+      'Per-set session logging',
+      'Calendar of scheduled & completed workouts',
+      'Inline exercise reference videos',
+    ],
+    cta: 'Get started',
+  },
+  {
+    name: 'Pro',
+    price: '$9',
+    unit: '/ month',
+    featured: true,
+    features: [
+      'Everything in Athlete',
+      'Unlimited program history',
+      'Advanced progress insights',
+      'Priority support',
+    ],
+    cta: 'Start Pro',
+  },
+  {
+    name: 'Coach',
+    price: '$29',
+    unit: '/ month',
+    featured: false,
+    features: [
+      'Everything in Pro',
+      'Connect & manage athletes',
+      'Share programs via invite codes',
+      'Cross-athlete progress monitoring',
+    ],
+    cta: 'Start coaching',
+  },
+];
+---
+<BaseLayout title="Pricing" description="Simple pricing for athletes and coaches. Start free.">
+  <section class="page-head container">
+    <p class="eyebrow">Pricing</p>
+    <h1>Start free. Upgrade when you're ready.</h1>
+    <p>Athletes train free forever. Coaches and power users get more when they need it.</p>
+  </section>
+
+  <section class="container">
+    <div class="price-grid">
+      {plans.map((p) => (
+        <article class={`plan${p.featured ? ' featured' : ''}`}>
+          <h3>{p.name}</h3>
+          <div class="price">{p.price}<small>{p.unit}</small></div>
+          <ul>
+            {p.features.map((f) => <li>{f}</li>)}
+          </ul>
+          <a href={APP_URL} class={`btn ${p.featured ? 'btn-primary' : 'btn-ghost'}`}>{p.cta}</a>
+        </article>
+      ))}
+    </div>
+    <p class="post-meta" style="text-align:center; margin-top:2rem;">
+      Prices shown are placeholders — wire them to your live Stripe plans before launch.
+    </p>
+  </section>
+</BaseLayout>
