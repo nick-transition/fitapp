@@ -2,16 +2,27 @@ rules_version='2'
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // API keys: only accessible by Cloud Functions (admin SDK bypasses rules)
-    match /apiKeys/{key} {
+    // OAuth machinery (clients, codes, token digests): Cloud Functions only.
+    // Clients are created via dynamic registration, never from the app.
+    match /oauthClients/{clientId} {
+      allow read, write: if false;
+    }
+    match /oauthCodes/{codeHash} {
+      allow read, write: if false;
+    }
+    match /oauthTokens/{tokenHash} {
+      allow read, write: if false;
+    }
+    match /oauthRefreshTokens/{tokenHash} {
       allow read, write: if false;
     }
 
-    // OAuth Clients: users can manage their own client credentials
-    match /oauthClients/{clientId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    // OAuth grants: users can see which apps they've authorized (no secrets
+    // in these docs). Revocation goes through the /grants/revoke endpoint so
+    // tokens are deleted along with the grant.
+    match /oauthGrants/{grantId} {
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow write: if false;
     }
 
     // Internal Configuration: completely hidden from all users

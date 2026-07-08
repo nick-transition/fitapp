@@ -1,17 +1,7 @@
 import * as admin from 'firebase-admin';
 import { Request } from 'firebase-functions/v2/https';
-import { isOAuthTokenExpired } from './oauthSecurity.js';
+import { ACCESS_TOKEN_PREFIX, SUPPORTED_SCOPES, isExpired, sha256Hex } from './oauthSecurity.js';
 
-/**
- * Resolves the authenticated user from the request.
- *
- * Supports two auth methods:
- * 1. Firebase ID token (from Flutter app or OAuth flow) - "Bearer <idToken>"
- * 2. API key fallback (for simple MCP client config) - "Bearer <apiKey>"
- *
- * ID tokens are tried first. If token verification fails (not a valid JWT),
- * falls back to API key lookup.
- */
 export interface AuthContext {
   userId: string;
   scopes: string[];
@@ -20,10 +10,13 @@ export interface AuthContext {
 /**
  * Resolves the authenticated user and their scopes from the request.
  *
- * Supports three auth methods:
- * 1. Firebase ID token (from Flutter app) - "Bearer <idToken>"
- * 2. OAuth access token (from Claude connector) - "Bearer <accessToken>"
- * 3. API key fallback (for manual MCP config) - "Bearer <apiKey>"
+ * Two auth methods:
+ * 1. Firebase ID token (the user's own app session) — full access
+ * 2. OAuth access token (from the MCP connector flow) — exactly the scopes
+ *    the user approved on the consent page
+ *
+ * Access tokens are looked up by SHA-256 digest; the plaintext token is never
+ * stored anywhere server-side.
  */
 export async function resolveUser(req: Request): Promise<AuthContext> {
   const authHeader = req.headers.authorization;
@@ -34,48 +27,30 @@ export async function resolveUser(req: Request): Promise<AuthContext> {
   const token = authHeader.slice(7);
   if (!token) throw new Error('Missing token');
 
-  // 1. Try Firebase ID token (user's personal session)
+  if (token.startsWith(ACCESS_TOKEN_PREFIX)) {
+    const ref = admin.firestore().doc(`oauthTokens/${sha256Hex(token)}`);
+    const doc = await ref.get();
+    if (!doc.exists) {
+      throw new Error('Invalid credentials');
+    }
+    const data = doc.data()!;
+    if (isExpired(data)) {
+      await ref.delete();
+      throw new Error('Invalid credentials');
+    }
+    return {
+      userId: data.userId as string,
+      scopes: (data.scope as string || '').split(' ').filter(Boolean),
+    };
+  }
+
   try {
     const decoded = await admin.auth().verifyIdToken(token);
     return {
       userId: decoded.uid,
-      scopes: ['profile:read', 'workout:read', 'workout:write'], // Full access for personal tokens
+      scopes: Object.keys(SUPPORTED_SCOPES),
     };
   } catch {
-    // Not a valid ID token — move to token lookups
+    throw new Error('Invalid credentials');
   }
-
-  // 2. OAuth access token lookup (from Claude connector)
-  const oauthDoc = await admin.firestore().doc(`oauthTokens/${token}`).get();
-  if (oauthDoc.exists) {
-    const data = oauthDoc.data()!;
-    if (isOAuthTokenExpired(data)) {
-      await admin.firestore().doc(`oauthTokens/${token}`).delete();
-      throw new Error('Invalid credentials');
-    }
-
-    let scopes = (data.scope as string || 'profile:read workout:read').split(' ');
-    
-    // If Claude requested the generic 'claudeai' scope, grant full workout access
-    if (scopes.includes('claudeai')) {
-      if (!scopes.includes('workout:read')) scopes.push('workout:read');
-      if (!scopes.includes('workout:write')) scopes.push('workout:write');
-    }
-
-    return {
-      userId: data.userId as string,
-      scopes: scopes,
-    };
-  }
-
-  // 3. API key fallback
-  const apiKeyDoc = await admin.firestore().doc(`apiKeys/${token}`).get();
-  if (apiKeyDoc.exists) {
-    return {
-      userId: apiKeyDoc.data()!.userId as string,
-      scopes: ['profile:read', 'workout:read', 'workout:write'], // Full access for API keys
-    };
-  }
-
-  throw new Error('Invalid credentials');
 }
