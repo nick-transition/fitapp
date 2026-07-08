@@ -33,19 +33,19 @@ async function setup() {
   }
 
   console.log('--- Setting up OAuth Client ---');
+  // Public client (no secret) — mirrors what POST /register creates.
+  // Real clients self-register via dynamic client registration.
   const clientId = 'claude-ai-connector';
-  const clientSecret = 'sk_test_' + require('crypto').randomBytes(16).toString('hex');
-  
+
   await db.collection('oauthClients').doc(clientId).set({
     name: 'Claude AI Connector',
-    secret: clientSecret,
-    redirectUris: ['https://claude.ai/oauth/callback'],
+    redirectUris: ['https://claude.ai/api/mcp/auth_callback', 'https://claude.ai/oauth/callback'],
+    tokenEndpointAuthMethod: 'none',
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
-  
+
   console.log('OAuth Client Created:');
-  console.log(`Client ID: ${clientId}`);
-  console.log(`Client Secret: ${clientSecret}`);
+  console.log(`Client ID: ${clientId} (public client, PKCE only — no secret)`);
 
   console.log('--- Done ---');
   process.exit(0);

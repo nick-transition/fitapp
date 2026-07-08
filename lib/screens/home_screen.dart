@@ -6,7 +6,7 @@ import '../models/workout.dart';
 import '../models/workout_plan.dart';
 import '../models/workout_session.dart';
 import '../widgets/session_card.dart';
-import 'api_token_screen.dart';
+import 'connected_apps_screen.dart';
 import 'calendar_screen.dart';
 import 'coach_screen.dart';
 import '../models/workout_program.dart';
@@ -45,11 +45,11 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.key),
-              tooltip: 'AI Client Setup',
+              icon: const Icon(Icons.smart_toy_outlined),
+              tooltip: 'Connected Apps',
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ApiTokenScreen()),
+                MaterialPageRoute(builder: (_) => const ConnectedAppsScreen()),
               ),
             ),
             IconButton(

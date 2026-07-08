@@ -10,7 +10,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { resolveUser } from './auth.js';
 import { handleToolCall, toolDefinitions } from './tools/index.js';
-import { handleOAuthRequest, FIREBASE_API_KEY } from './oauth.js';
+import { handleOAuthRequest, protectedResourceMetadataUrl, FIREBASE_API_KEY } from './oauth.js';
 import { promptDefinitions, getPrompt } from './prompts.js';
 export { createCheckoutSession, handleStripeWebhook, createPortalSession } from './stripe.js';
 
@@ -34,8 +34,9 @@ export const mcp = onRequest(
 
     const path = req.path.replace(/\/$/, '') || '/';
 
-    // Route OAuth requests
-    if (path.includes('/authorize') || path.includes('/token') || path.includes('/login') || path.includes('/callback')) {
+    // Route OAuth + discovery requests
+    const oauthPaths = ['/authorize', '/token', '/callback', '/register', '/revoke', '/grants/revoke'];
+    if (path.includes('/.well-known/') || oauthPaths.some((p) => path.endsWith(p))) {
       return handleOAuthRequest(req, res);
     }
 
@@ -77,6 +78,12 @@ export const mcp = onRequest(
         message === 'Missing token' ||
         message === 'Invalid credentials'
       ) {
+        // RFC 9728: point unauthenticated MCP clients at the discovery
+        // metadata so they can start the OAuth flow on their own.
+        res.set(
+          'WWW-Authenticate',
+          `Bearer resource_metadata="${protectedResourceMetadataUrl(req)}"`
+        );
         res.status(401).json({ error: message });
       } else {
         console.error('MCP server error:', error);
