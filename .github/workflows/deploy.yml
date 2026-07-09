@@ -40,7 +40,7 @@ jobs:
       - name: Build functions
         run: npm --prefix functions run build
 
-      - name: Deploy functions
+      - name: Deploy functions and Firestore rules
         run: |
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/gcp-sa.json
-          GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-sa.json firebase deploy --only functions --project fitapp-ns
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-sa.json firebase deploy --only functions,firestore --project fitapp-ns
