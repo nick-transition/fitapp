@@ -35,10 +35,11 @@ Follow these steps exactly:
 1. First, suggest a high-level Program name and description based on my goal.
 2. Once I approve the program name, use the 'create_workout_program' tool to create it and note the programId it returns — you will need it for every plan you create.
 3. Next, propose a workout split (e.g., a 3-day or 4-day plan) that fits this program.
-4. For each day in the split, suggest specific exercises with:
+4. For each day in the split, suggest specific exercises. Search the global exercise library using 'search_exercise_library' to find canonical exercise definitions and include their libraryExerciseId where available:
    - sets (number), reps (number, optional), weight (string like "135 lbs", "bodyweight", "medium-light working weight", "RPE 7" — never a bare number, optional)
    - notes: important coaching cues, rep ranges, rest times, RIR targets, form tips, warm-up instructions (put ALL of these in the notes field, NOT in the exercise name)
    - videoUrl: YouTube reference links for complex movements (optional)
+   - libraryExerciseId: canonical exercise ID from the exercise library (optional)
 5. Ask me which days of the week I want to do each workout (e.g., "Monday", "Wednesday", "Friday").
 6. Once I approve the plan details, use the 'create_workout_plan' tool to save each workout day as its own Plan, passing:
    - programId: the ID returned from 'create_workout_program' in step 2 (REQUIRED — every plan must be linked to the program)
@@ -49,9 +50,13 @@ Follow these steps exactly:
 
 Data structure reference for create_workout_plan:
 - programId: string (REQUIRED when building a program — links this plan to its parent program)
-- days: array of { name, exercises: [{ name, sets, reps?, weight?, notes?, videoUrl? }] }
+- days: array of { name, exercises: [{ name, libraryExerciseId?, sets, reps?, weight?, notes?, videoUrl? }] }
 - schedule: day of week string — IMPORTANT: set this so plans appear on the correct day in the app
 - type: workout category string
+
+Exercise library:
+- Use 'search_exercise_library' to look up canonical exercises by name or tags before prescribing them
+- Use 'get_library_exercise' to inspect full instructions, form cues, or reference links for an exercise
 
 Logging workouts:
 - Use 'log_workout_session' to record a completed session tied to a plan day (e.g. "Log my lower body day: squats 5x5 at 195, RDLs 4x7 at 135")
