@@ -50,6 +50,7 @@ export const planToolDefinitions: Tool[] = [
                   type: 'object',
                   properties: {
                     name: { type: 'string' },
+                    libraryExerciseId: { type: 'string', description: 'Optional ID of the exercise in the global exercise library' },
                     sets: { type: 'number' },
                     reps: { type: 'number' },
                     weight: { type: 'string', description: 'Weight as a descriptive string (e.g., "bodyweight", "135 lbs", "medium-light working weight", "RPE 7"). Do not use a number.' },

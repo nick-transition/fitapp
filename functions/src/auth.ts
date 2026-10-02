@@ -5,6 +5,7 @@ import { ACCESS_TOKEN_PREFIX, SUPPORTED_SCOPES, isExpired, sha256Hex } from './o
 export interface AuthContext {
   userId: string;
   scopes: string[];
+  isAdmin: boolean;
 }
 
 /**
@@ -38,9 +39,18 @@ export async function resolveUser(req: Request): Promise<AuthContext> {
       await ref.delete();
       throw new Error('Invalid credentials');
     }
+    const userId = data.userId as string;
+    let isAdmin = false;
+    try {
+      const user = await admin.auth().getUser(userId);
+      isAdmin = user.customClaims?.admin === true;
+    } catch {
+      isAdmin = false;
+    }
     return {
-      userId: data.userId as string,
+      userId,
       scopes: (data.scope as string || '').split(' ').filter(Boolean),
+      isAdmin,
     };
   }
 
@@ -49,6 +59,7 @@ export async function resolveUser(req: Request): Promise<AuthContext> {
     return {
       userId: decoded.uid,
       scopes: Object.keys(SUPPORTED_SCOPES),
+      isAdmin: decoded.admin === true,
     };
   } catch {
     throw new Error('Invalid credentials');
