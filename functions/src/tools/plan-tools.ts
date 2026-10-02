@@ -55,6 +55,7 @@ export const planToolDefinitions: Tool[] = [
                     weight: { type: 'string', description: 'Weight as a descriptive string (e.g., "bodyweight", "135 lbs", "medium-light working weight", "RPE 7"). Do not use a number.' },
                     videoUrl: { type: 'string' },
                     notes: { type: 'string', description: 'Coaching cues: RIR targets, rest periods, form tips, warm-up instructions. Put all coaching guidance here, NOT in the exercise name.' },
+                    libraryExerciseId: { type: 'string', description: 'Document ID of the exercise-library entry this exercise came from, when one was used. Custom free-text exercises omit it.' },
                   },
                   required: ['name', 'sets'],
                 },

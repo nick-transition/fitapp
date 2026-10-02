@@ -39,6 +39,9 @@ Follow these steps exactly:
    - sets (number), reps (number, optional), weight (string like "135 lbs", "bodyweight", "medium-light working weight", "RPE 7" — never a bare number, optional)
    - notes: important coaching cues, rep ranges, rest times, RIR targets, form tips, warm-up instructions (put ALL of these in the notes field, NOT in the exercise name)
    - videoUrl: YouTube reference links for complex movements (optional)
+   BEFORE finalizing each exercise, use 'search_exercise_library' with the exercise name (or a likely alias) to check the shared library:
+     - If a matching entry is found, use the library entry's exact name and videoUrl on the embedded exercise and set its libraryExerciseId to the entry's id; mention its tags in the notes when relevant.
+     - If there is no match, add the exercise as a custom free-text exercise and leave libraryExerciseId unset (library additions are admin-only — never try to add library entries here unless the user explicitly asks and you have admin rights).
 5. Ask me which days of the week I want to do each workout (e.g., "Monday", "Wednesday", "Friday").
 6. Once I approve the plan details, use the 'create_workout_plan' tool to save each workout day as its own Plan, passing:
    - programId: the ID returned from 'create_workout_program' in step 2 (REQUIRED — every plan must be linked to the program)
@@ -49,7 +52,7 @@ Follow these steps exactly:
 
 Data structure reference for create_workout_plan:
 - programId: string (REQUIRED when building a program — links this plan to its parent program)
-- days: array of { name, exercises: [{ name, sets, reps?, weight?, notes?, videoUrl? }] }
+- days: array of { name, exercises: [{ name, sets, reps?, weight?, notes?, videoUrl?, libraryExerciseId? }] }
 - schedule: day of week string — IMPORTANT: set this so plans appear on the correct day in the app
 - type: workout category string
 

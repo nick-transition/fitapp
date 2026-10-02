@@ -5,6 +5,13 @@ import { ACCESS_TOKEN_PREFIX, SUPPORTED_SCOPES, isExpired, sha256Hex } from './o
 export interface AuthContext {
   userId: string;
   scopes: string[];
+  /**
+   * Whether the underlying Auth record carries the `admin: true` custom
+   * claim (resolved at auth time — ID-token claims come free with the token,
+   * OAuth tokens are resolved via a user-record lookup). Gates admin-only
+   * surfaces such as exercise-library writes.
+   */
+  isAdmin: boolean;
 }
 
 /**
@@ -38,9 +45,20 @@ export async function resolveUser(req: Request): Promise<AuthContext> {
       await ref.delete();
       throw new Error('Invalid credentials');
     }
+    const userId = data.userId as string;
+    // OAuth tokens carry no custom claims themselves; resolve the admin
+    // claim from the underlying Auth record. Missing users are not admins.
+    let isAdmin = false;
+    try {
+      const user = await admin.auth().getUser(userId);
+      isAdmin = user.customClaims?.admin === true;
+    } catch {
+      isAdmin = false;
+    }
     return {
-      userId: data.userId as string,
+      userId,
       scopes: (data.scope as string || '').split(' ').filter(Boolean),
+      isAdmin,
     };
   }
 
@@ -49,6 +67,7 @@ export async function resolveUser(req: Request): Promise<AuthContext> {
     return {
       userId: decoded.uid,
       scopes: Object.keys(SUPPORTED_SCOPES),
+      isAdmin: decoded.admin === true,
     };
   } catch {
     throw new Error('Invalid credentials');

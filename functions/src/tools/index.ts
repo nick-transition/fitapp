@@ -1,15 +1,18 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { planToolDefinitions, handlePlanTool } from './plan-tools.js';
 import { sessionToolDefinitions, handleSessionTool } from './session-tools.js';
+import { exerciseLibraryToolDefinitions, handleExerciseLibraryTool } from './exercise-library-tools.js';
 import { AuthContext } from '../auth.js';
 
 export const toolDefinitions: Tool[] = [
   ...planToolDefinitions,
   ...sessionToolDefinitions,
+  ...exerciseLibraryToolDefinitions,
 ];
 
 const planToolNames = new Set(planToolDefinitions.map((t) => t.name));
 const sessionToolNames = new Set(sessionToolDefinitions.map((t) => t.name));
+const exerciseLibraryToolNames = new Set(exerciseLibraryToolDefinitions.map((t) => t.name));
 
 /**
  * Maps each tool to its required OAuth scope.
@@ -33,6 +36,11 @@ const toolScopeMap: Record<string, string> = {
   'update_session': 'workout:write',
   'list_sessions': 'workout:read',
   'query_exercise_history': 'workout:read',
+  // Exercise library tools
+  'search_exercise_library': 'workout:read',
+  'get_library_exercise': 'workout:read',
+  'update_library_exercise': 'workout:write',
+  'add_library_exercise': 'workout:write',
 };
 
 export async function handleToolCall(
@@ -60,6 +68,11 @@ export async function handleToolCall(
   }
   if (sessionToolNames.has(name)) {
     return handleSessionTool(name, args, auth.userId);
+  }
+  if (exerciseLibraryToolNames.has(name)) {
+    // Library writes additionally require the admin claim, which
+    // handleExerciseLibraryTool enforces per call from auth.isAdmin.
+    return handleExerciseLibraryTool(name, args, auth);
   }
   return {
     content: [{ type: 'text', text: JSON.stringify({ error: `Unknown tool: ${name}` }) }],

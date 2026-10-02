@@ -111,6 +111,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:rules": "firebase emulators:exec --only firestore \"node --test 'test/rules/*.test.js'\"",
+    "test:tools": "npm --prefix functions run build && firebase emulators:exec --only firestore \"node --test test/tools/*.test.js\"",
     "e2e": "./scripts/run_e2e.sh",
     "e2e:quick": "./scripts/run_e2e.sh --skip-build",
     "e2e:screenshots": "playwright test --project=screenshots"
