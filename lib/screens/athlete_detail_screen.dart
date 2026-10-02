@@ -25,7 +25,10 @@ class AthleteDetailScreen extends StatelessWidget {
       length: 4,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(athleteName),
+          title: Hero(
+            tag: 'hero-athlete-$athleteUid',
+            child: Text(athleteName),
+          ),
           bottom: const TabBar(
             isScrollable: true,
             tabs: [

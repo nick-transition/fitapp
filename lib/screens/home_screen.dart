@@ -5,6 +5,8 @@ import '../models/exercise.dart';
 import '../models/workout.dart';
 import '../models/workout_plan.dart';
 import '../models/workout_session.dart';
+import '../widgets/animated_phase_switcher.dart';
+import '../widgets/app_page_route.dart';
 import '../widgets/session_card.dart';
 import 'connected_apps_screen.dart';
 import 'calendar_screen.dart';
@@ -33,7 +35,7 @@ class HomeScreen extends StatelessWidget {
               tooltip: 'Subscription',
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+                AppPageRoute(builder: (_) => const SubscriptionScreen()),
               ),
             ),
             IconButton(
@@ -41,7 +43,7 @@ class HomeScreen extends StatelessWidget {
               tooltip: 'Coach Sharing',
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const CoachScreen()),
+                AppPageRoute(builder: (_) => const CoachScreen()),
               ),
             ),
             IconButton(
@@ -49,7 +51,7 @@ class HomeScreen extends StatelessWidget {
               tooltip: 'Connected Apps',
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ConnectedAppsScreen()),
+                AppPageRoute(builder: (_) => const ConnectedAppsScreen()),
               ),
             ),
             IconButton(
@@ -57,7 +59,7 @@ class HomeScreen extends StatelessWidget {
               tooltip: 'Help & Setup',
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const FaqScreen()),
+                AppPageRoute(builder: (_) => const FaqScreen()),
               ),
             ),
             IconButton(
@@ -100,7 +102,7 @@ class _ProgramsTab extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const ProgramEditScreen()),
+          AppPageRoute(builder: (_) => const ProgramEditScreen()),
         ),
         tooltip: 'New Program',
         child: const Icon(Icons.add),
@@ -113,31 +115,46 @@ class _ProgramsTab extends StatelessWidget {
             .orderBy('updatedAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
-          if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-          
-          final docs = snapshot.data!.docs;
-          if (docs.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.folder_open, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('No programs yet', style: TextStyle(color: Colors.grey)),
-                ],
+          final Widget phase;
+          if (snapshot.hasError) {
+            phase = KeyedSubtree(
+              key: const ValueKey('programs-error'),
+              child: Center(child: Text('Error: ${snapshot.error}')),
+            );
+          } else if (snapshot.connectionState == ConnectionState.waiting) {
+            phase = const KeyedSubtree(
+              key: ValueKey('programs-loading'),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          } else if (snapshot.data!.docs.isEmpty) {
+            phase = const KeyedSubtree(
+              key: ValueKey('programs-empty'),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.folder_open, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text('No programs yet', style: TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              ),
+            );
+          } else {
+            final docs = snapshot.data!.docs;
+            phase = KeyedSubtree(
+              key: const ValueKey('programs-content'),
+              child: ListView.builder(
+                itemCount: docs.length,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemBuilder: (context, index) {
+                  final program = WorkoutProgram.fromMap(docs[index].id, docs[index].data() as Map<String, dynamic>);
+                  return _ProgramCard(program: program);
+                },
               ),
             );
           }
-
-          return ListView.builder(
-            itemCount: docs.length,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemBuilder: (context, index) {
-              final program = WorkoutProgram.fromMap(docs[index].id, docs[index].data() as Map<String, dynamic>);
-              return _ProgramCard(program: program);
-            },
-          );
+          return AnimatedPhaseSwitcher(child: phase);
         },
       ),
     );
@@ -154,7 +171,10 @@ class _ProgramCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: ListTile(
         leading: const Icon(Icons.folder, color: Colors.teal),
-        title: Text(program.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Hero(
+          tag: 'hero-program-${program.id}',
+          child: Text(program.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ),
         subtitle: Text(program.description ?? 'No description'),
         trailing: IconButton(
           icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
@@ -163,7 +183,7 @@ class _ProgramCard extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
+            AppPageRoute(
               builder: (_) => ProgramDetailScreen(program: program),
             ),
           );
@@ -238,47 +258,60 @@ class _SessionsTab extends StatelessWidget {
             .orderBy('startedAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
+          final Widget phase;
           if (snapshot.hasError) {
-            return Center(
-              child: Text('Something went wrong: ${snapshot.error}'),
+            phase = KeyedSubtree(
+              key: const ValueKey('sessions-error'),
+              child: Center(
+                child: Text('Something went wrong: ${snapshot.error}'),
+              ),
             );
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final docs = snapshot.data!.docs;
-          if (docs.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.history, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    'No workout sessions yet',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Sessions will appear here once recorded',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
+          } else if (snapshot.connectionState == ConnectionState.waiting) {
+            phase = const KeyedSubtree(
+              key: ValueKey('sessions-loading'),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          } else if (snapshot.data!.docs.isEmpty) {
+            phase = const KeyedSubtree(
+              key: ValueKey('sessions-empty'),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.history, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'No workout sessions yet',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Sessions will appear here once recorded',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          } else {
+            final docs = snapshot.data!.docs;
+            phase = KeyedSubtree(
+              key: const ValueKey('sessions-content'),
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final doc = docs[index];
+                  final session = WorkoutSession.fromMap(
+                    doc.id,
+                    doc.data()! as Map<String, dynamic>,
+                  );
+                  return SessionCard(session: session);
+                },
               ),
             );
           }
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final doc = docs[index];
-              final session = WorkoutSession.fromMap(
-                doc.id,
-                doc.data()! as Map<String, dynamic>,
-              );
-              return SessionCard(session: session);
-            },
-          );
+          return AnimatedPhaseSwitcher(child: phase);
         },
       ),
     );
@@ -363,7 +396,7 @@ Future<void> _showPlanPicker(BuildContext context, String uid) async {
                             Navigator.pop(sheetContext);
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
+                              AppPageRoute(
                                 builder: (_) => SessionEditScreen(
                                   workout: _planToWorkout(plan),
                                 ),

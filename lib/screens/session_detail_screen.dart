@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout_session.dart';
 import '../widgets/recorded_video_tile.dart';
 import '../widgets/video_player.dart';
-
 class SessionDetailScreen extends StatefulWidget {
   final WorkoutSession session;
   final bool readOnly;
@@ -55,7 +54,10 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.session.planName ?? 'Quick Workout'),
+        title: Hero(
+          tag: 'hero-session-${widget.session.id}',
+          child: Text(widget.session.planName ?? 'Quick Workout'),
+        ),
         actions: [
           if (widget.readOnly)
             Padding(

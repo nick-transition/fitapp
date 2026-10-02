@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout_session.dart';
 import '../screens/session_detail_screen.dart';
+import 'app_page_route.dart';
 
 class SessionCard extends StatelessWidget {
   final WorkoutSession session;
@@ -81,7 +82,7 @@ class SessionCard extends StatelessWidget {
 
     void openDetail() {
       Navigator.of(context).push(
-        MaterialPageRoute(
+        AppPageRoute(
           builder:
               (_) => SessionDetailScreen(
                 session: session,
@@ -111,10 +112,13 @@ class SessionCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        session.planName ?? 'Quick Workout',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      child: Hero(
+                        tag: 'hero-session-${session.id}',
+                        child: Text(
+                          session.planName ?? 'Quick Workout',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),

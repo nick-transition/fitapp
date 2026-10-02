@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout_session.dart';
+import '../widgets/animated_phase_switcher.dart';
+import '../widgets/app_page_route.dart';
 import 'session_detail_screen.dart';
 
 class CalendarScreen extends StatefulWidget {
@@ -39,51 +41,61 @@ class _CalendarScreenState extends State<CalendarScreen> {
           .collection('sessions')
           .snapshots(),
       builder: (context, snapshot) {
+        final Widget phase;
         if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final sessions = snapshot.data!.docs.map((doc) {
-          return WorkoutSession.fromMap(
-            doc.id,
-            doc.data()! as Map<String, dynamic>,
+          phase = KeyedSubtree(
+            key: const ValueKey('calendar-error'),
+            child: Center(child: Text('Error: ${snapshot.error}')),
           );
-        }).toList();
+        } else if (snapshot.connectionState == ConnectionState.waiting) {
+          phase = const KeyedSubtree(
+            key: ValueKey('calendar-loading'),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        } else {
+          final sessions = snapshot.data!.docs.map((doc) {
+            return WorkoutSession.fromMap(
+              doc.id,
+              doc.data()! as Map<String, dynamic>,
+            );
+          }).toList();
 
-        // Group sessions by calendar date
-        final sessionsByDate = <DateTime, List<WorkoutSession>>{};
-        for (final session in sessions) {
-          final date = session.calendarDate;
-          if (date == null) continue;
-          final key = DateTime(date.year, date.month, date.day);
-          sessionsByDate.putIfAbsent(key, () => []).add(session);
+          // Group sessions by calendar date
+          final sessionsByDate = <DateTime, List<WorkoutSession>>{};
+          for (final session in sessions) {
+            final date = session.calendarDate;
+            if (date == null) continue;
+            final key = DateTime(date.year, date.month, date.day);
+            sessionsByDate.putIfAbsent(key, () => []).add(session);
+          }
+
+          // Sessions for selected date
+          final selectedSessions = sessionsByDate[_selectedDate] ?? [];
+
+          phase = KeyedSubtree(
+            key: ValueKey('calendar-content-${_focusedMonth.month}'),
+            child: Column(
+              children: [
+                _MonthHeader(
+                  month: _focusedMonth,
+                  onPrevious: () => _changeMonth(-1),
+                  onNext: () => _changeMonth(1),
+                ),
+                _CalendarGrid(
+                  month: _focusedMonth,
+                  selectedDate: _selectedDate,
+                  sessionsByDate: sessionsByDate,
+                  onDateSelected: (date) => setState(() => _selectedDate = date),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: _DaySessionList(sessions: selectedSessions),
+                ),
+              ],
+            ),
+          );
         }
-
-        // Sessions for selected date
-        final selectedSessions = sessionsByDate[_selectedDate] ?? [];
-
-        return Column(
-          children: [
-            _MonthHeader(
-              month: _focusedMonth,
-              onPrevious: () => _changeMonth(-1),
-              onNext: () => _changeMonth(1),
-            ),
-            _CalendarGrid(
-              month: _focusedMonth,
-              selectedDate: _selectedDate,
-              sessionsByDate: sessionsByDate,
-              onDateSelected: (date) => setState(() => _selectedDate = date),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: _DaySessionList(sessions: selectedSessions),
-            ),
-          ],
-        );
+        return AnimatedPhaseSwitcher(child: phase);
       },
     );
   }
@@ -396,7 +408,7 @@ class _CalendarSessionTile extends StatelessWidget {
         ),
         onTap: () {
           Navigator.of(context).push(
-            MaterialPageRoute(
+            AppPageRoute(
               builder: (_) => SessionDetailScreen(session: session),
             ),
           );

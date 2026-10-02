@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/coach_connection.dart';
+import '../widgets/animated_phase_switcher.dart';
+import '../widgets/app_page_route.dart';
 import 'athlete_detail_screen.dart';
 
 class CoachScreen extends StatelessWidget {
@@ -236,48 +238,61 @@ class _ShareTabState extends State<_ShareTab> {
               .where('type', isEqualTo: 'connection')
               .snapshots(),
           builder: (context, snapshot) {
+            final Widget phase;
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final docs = snapshot.data?.docs ?? [];
-            if (docs.isEmpty) {
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Center(
-                    child: Text(
-                      'No coaches connected yet.\nShare your invite code to get started.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: Colors.grey),
-                    ),
-                  ),
-                ),
+              phase = const KeyedSubtree(
+                key: ValueKey('coach-connections-loading'),
+                child: Center(child: CircularProgressIndicator()),
               );
-            }
-            return Column(
-              children: docs.map((doc) {
-                final conn = CoachConnection.fromMap(
-                    doc.id, doc.data() as Map<String, dynamic>);
-                return Card(
-                  child: ListTile(
-                    leading: const CircleAvatar(
-                      child: Icon(Icons.person),
-                    ),
-                    title: Text(conn.coachName ?? 'Coach'),
-                    subtitle:
-                        conn.connectedAt != null ? Text('Connected ${_formatDate(conn.connectedAt!)}') : null,
-                    trailing: IconButton(
-                      icon: const Icon(Icons.remove_circle_outline,
-                          color: Colors.red),
-                      tooltip: 'Revoke access',
-                      onPressed: () => _revokeAccess(
-                          doc.id, conn.coachName ?? 'Coach'),
+            } else {
+              final docs = snapshot.data?.docs ?? [];
+              if (docs.isEmpty) {
+                phase = KeyedSubtree(
+                  key: const ValueKey('coach-connections-empty'),
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Center(
+                        child: Text(
+                          'No coaches connected yet.\nShare your invite code to get started.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: Colors.grey),
+                        ),
+                      ),
                     ),
                   ),
                 );
-              }).toList(),
-            );
+              } else {
+                phase = KeyedSubtree(
+                  key: ValueKey('coach-connections-content-${docs.length}'),
+                  child: Column(
+                    children: docs.map((doc) {
+                      final conn = CoachConnection.fromMap(
+                          doc.id, doc.data() as Map<String, dynamic>);
+                      return Card(
+                        child: ListTile(
+                          leading: const CircleAvatar(
+                            child: Icon(Icons.person),
+                          ),
+                          title: Text(conn.coachName ?? 'Coach'),
+                          subtitle:
+                              conn.connectedAt != null ? Text('Connected ${_formatDate(conn.connectedAt!)}') : null,
+                          trailing: IconButton(
+                            icon: const Icon(Icons.remove_circle_outline,
+                                color: Colors.red),
+                            tooltip: 'Revoke access',
+                            onPressed: () => _revokeAccess(
+                                doc.id, conn.coachName ?? 'Coach'),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                );
+              }
+            }
+            return AnimatedPhaseSwitcher(child: phase);
           },
         ),
       ],
@@ -525,7 +540,10 @@ class _AthletesTabState extends State<_AthletesTab> {
                       backgroundColor: Colors.teal,
                       child: Icon(Icons.person, color: Colors.white),
                     ),
-                    title: Text(conn.ownerName ?? 'Athlete'),
+                    title: Hero(
+                      tag: 'hero-athlete-${conn.ownerUid}',
+                      child: Text(conn.ownerName ?? 'Athlete'),
+                    ),
                     subtitle: const Text('Tap to view programs & progress'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -535,7 +553,7 @@ class _AthletesTabState extends State<_AthletesTab> {
                     ),
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
+                      AppPageRoute(
                         builder: (_) => AthleteDetailScreen(
                           athleteUid: conn.ownerUid,
                           athleteName: conn.ownerName ?? 'Athlete',

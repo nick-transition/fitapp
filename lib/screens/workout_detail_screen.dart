@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/workout.dart';
+import '../widgets/app_page_route.dart';
 import '../widgets/video_player.dart';
 import 'workout_edit_screen.dart';
 import 'session_edit_screen.dart';
@@ -20,7 +21,10 @@ class WorkoutDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(workout.name),
+        title: Hero(
+          tag: 'hero-workout-${workout.id}',
+          child: Text(workout.name),
+        ),
         actions: [
           if (!readOnly)
             IconButton(
@@ -28,7 +32,7 @@ class WorkoutDetailScreen extends StatelessWidget {
               tooltip: 'Edit workout',
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => WorkoutEditScreen(workout: workout)),
+                  AppPageRoute(builder: (_) => WorkoutEditScreen(workout: workout)),
                 );
               },
             ),
@@ -62,7 +66,7 @@ class WorkoutDetailScreen extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(
+                    AppPageRoute(
                       builder: (_) => SessionEditScreen(workout: workout),
                     ),
                   );

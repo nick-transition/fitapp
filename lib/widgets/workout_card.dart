@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout.dart';
 import '../screens/workout_detail_screen.dart';
+import 'app_page_route.dart';
 import 'video_player.dart';
 
 class WorkoutCard extends StatefulWidget {
@@ -65,7 +66,10 @@ class _WorkoutCardState extends State<WorkoutCard> {
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 16),
         leading: const Icon(Icons.fitness_center, color: Colors.teal),
-        title: Text(widget.workout.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Hero(
+          tag: 'hero-workout-${widget.workout.id}',
+          child: Text(widget.workout.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ),
         subtitle: Text(
           subtitleParts.join(' · '),
           style: theme.textTheme.bodySmall,
@@ -106,7 +110,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
                   icon: const Icon(Icons.open_in_new, size: 16),
                   label: const Text('View Details'),
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => WorkoutDetailScreen(
+                    AppPageRoute(builder: (_) => WorkoutDetailScreen(
                       workout: widget.workout,
                       readOnly: widget.readOnly,
                     )),
