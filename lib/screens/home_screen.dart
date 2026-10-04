@@ -17,71 +17,110 @@ import 'session_edit_screen.dart';
 
 import 'program_detail_screen.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  final List<Widget>? testDestinations;
+  const HomeScreen({super.key, this.testDestinations});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0;
+
+  static const List<Widget> _defaultDestinations = [
+    _ProgramsTab(),
+    CalendarScreen(),
+    _SessionsTab(),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('FitApp'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.card_membership),
-              tooltip: 'Subscription',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-              ),
+    final destinations = widget.testDestinations ?? _defaultDestinations;
+    final disableAnimations = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('FitApp'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.card_membership),
+            tooltip: 'Subscription',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
             ),
-            IconButton(
-              icon: const Icon(Icons.people),
-              tooltip: 'Coach Sharing',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CoachScreen()),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.smart_toy_outlined),
-              tooltip: 'Connected Apps',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ConnectedAppsScreen()),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.help_outline),
-              tooltip: 'Help & Setup',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const FaqScreen()),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: 'Sign Out',
-              onPressed: () => FirebaseAuth.instance.signOut(),
-            ),
-          ],
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(icon: Icon(Icons.folder_copy), text: 'Programs'),
-              Tab(icon: Icon(Icons.calendar_month), text: 'Calendar'),
-              Tab(icon: Icon(Icons.history), text: 'Sessions'),
-            ],
           ),
+          IconButton(
+            icon: const Icon(Icons.people),
+            tooltip: 'Coach Sharing',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CoachScreen()),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.smart_toy_outlined),
+            tooltip: 'Connected Apps',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ConnectedAppsScreen()),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'Help & Setup',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const FaqScreen()),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sign Out',
+            onPressed: () => FirebaseAuth.instance.signOut(),
+          ),
+        ],
+      ),
+      body: AnimatedSwitcher(
+        duration: disableAnimations ? Duration.zero : const Duration(milliseconds: 200),
+        switchInCurve: Curves.easeInOut,
+        switchOutCurve: Curves.easeInOut,
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        child: KeyedSubtree(
+          key: ValueKey<int>(_selectedIndex),
+          child: destinations[_selectedIndex],
         ),
-        body: const TabBarView(
-          children: [
-            _ProgramsTab(),
-            CalendarScreen(),
-            _SessionsTab(),
-          ],
-        ),
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (int index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.folder_outlined),
+            selectedIcon: Icon(Icons.folder_copy),
+            label: 'Programs',
+            tooltip: 'Programs',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month),
+            label: 'Calendar',
+            tooltip: 'Calendar',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history),
+            label: 'Sessions',
+            tooltip: 'Sessions',
+          ),
+        ],
       ),
     );
   }

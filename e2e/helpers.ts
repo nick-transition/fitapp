@@ -25,7 +25,10 @@ export function button(page: Page, name: string | RegExp) {
 }
 
 export function tab(page: Page, name: string) {
-  return page.getByRole('tab', { name: new RegExp(name) }).first();
+  return page
+    .getByRole('tab', { name: new RegExp(name) })
+    .or(page.getByRole('button', { name: new RegExp(name) }))
+    .first();
 }
 
 export async function goBack(page: Page) {
