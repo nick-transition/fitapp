@@ -64,3 +64,8 @@ As of April 2026, the two established bounty platforms (Algora and Polar) have b
 ## History
 
 _First bounty pending — this section will track completed bounties, time-to-merge, and any scope adjustments once the pilot runs._
+
+
+## Example Usage
+
+Resolved parameter handling for issue #90.
