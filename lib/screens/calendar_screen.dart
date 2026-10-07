@@ -67,12 +67,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
         return Column(
           children: [
-            _MonthHeader(
+            MonthHeader(
               month: _focusedMonth,
               onPrevious: () => _changeMonth(-1),
               onNext: () => _changeMonth(1),
             ),
-            _CalendarGrid(
+            CalendarGrid(
               month: _focusedMonth,
               selectedDate: _selectedDate,
               sessionsByDate: sessionsByDate,
@@ -89,18 +89,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 }
 
-class _MonthHeader extends StatelessWidget {
+class MonthHeader extends StatelessWidget {
   final DateTime month;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
 
-  const _MonthHeader({
+  const MonthHeader({
+    super.key,
     required this.month,
     required this.onPrevious,
     required this.onNext,
   });
 
-  static const _monthNames = [
+  static const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
   ];
@@ -114,16 +115,18 @@ class _MonthHeader extends StatelessWidget {
         children: [
           IconButton(
             icon: const Icon(Icons.chevron_left),
+            tooltip: 'Previous month',
             onPressed: onPrevious,
           ),
           Text(
-            '${_monthNames[month.month - 1]} ${month.year}',
+            '${monthNames[month.month - 1]} ${month.year}',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
           IconButton(
             icon: const Icon(Icons.chevron_right),
+            tooltip: 'Next month',
             onPressed: onNext,
           ),
         ],
@@ -132,18 +135,44 @@ class _MonthHeader extends StatelessWidget {
   }
 }
 
-class _CalendarGrid extends StatelessWidget {
+class CalendarGrid extends StatelessWidget {
   final DateTime month;
   final DateTime selectedDate;
   final Map<DateTime, List<WorkoutSession>> sessionsByDate;
   final ValueChanged<DateTime> onDateSelected;
 
-  const _CalendarGrid({
+  const CalendarGrid({
+    super.key,
     required this.month,
     required this.selectedDate,
     required this.sessionsByDate,
     required this.onDateSelected,
   });
+
+  String _formatSemanticsLabel(
+    DateTime date, {
+    required bool isToday,
+    required bool isSelected,
+    required bool hasCompleted,
+    required bool hasScheduled,
+  }) {
+    final buffer = StringBuffer(
+      '${MonthHeader.monthNames[date.month - 1]} ${date.day}, ${date.year}',
+    );
+    if (isToday) {
+      buffer.write(', Today');
+    }
+    if (isSelected) {
+      buffer.write(', Selected');
+    }
+    if (hasCompleted) {
+      buffer.write(', Completed session');
+    }
+    if (hasScheduled) {
+      buffer.write(', Scheduled session');
+    }
+    return buffer.toString();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -167,10 +196,12 @@ class _CalendarGrid extends StatelessWidget {
                       child: Center(
                         child: Padding(
                           padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            d,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: Colors.grey,
+                          child: ExcludeSemantics(
+                            child: Text(
+                              d,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: Colors.grey,
+                              ),
                             ),
                           ),
                         ),
@@ -186,74 +217,101 @@ class _CalendarGrid extends StatelessWidget {
                 children: List.generate(7, (weekday) {
                   final dayIndex = week * 7 + weekday - startOffset + 1;
                   if (dayIndex < 1 || dayIndex > lastDay.day) {
-                    return const Expanded(child: SizedBox(height: 44));
+                    return const Expanded(
+                      child: ExcludeSemantics(
+                        child: SizedBox(height: 44),
+                      ),
+                    );
                   }
                   final date = DateTime(month.year, month.month, dayIndex);
                   final sessions = sessionsByDate[date];
-                  final isSelected = date == selectedDate;
+                  final isSelected = date.year == selectedDate.year &&
+                      date.month == selectedDate.month &&
+                      date.day == selectedDate.day;
                   final isToday = date == todayKey;
                   final hasCompleted =
                       sessions?.any((s) => s.isCompleted) ?? false;
                   final hasScheduled =
                       sessions?.any((s) => s.isScheduled) ?? false;
 
+                  final semanticsLabel = _formatSemanticsLabel(
+                    date,
+                    isToday: isToday,
+                    isSelected: isSelected,
+                    hasCompleted: hasCompleted,
+                    hasScheduled: hasScheduled,
+                  );
+
                   return Expanded(
-                    child: GestureDetector(
-                      onTap: () => onDateSelected(date),
-                      child: Container(
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? theme.colorScheme.primary.withAlpha(40)
-                              : null,
-                          border: isToday
-                              ? Border.all(
-                                  color: theme.colorScheme.primary, width: 1.5)
-                              : null,
+                    child: Semantics(
+                      label: semanticsLabel,
+                      button: true,
+                      enabled: true,
+                      selected: isSelected,
+                      excludeSemantics: true,
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: InkWell(
+                          onTap: () => onDateSelected(date),
                           borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              '$dayIndex',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                fontWeight:
-                                    isSelected ? FontWeight.bold : null,
-                                color: isSelected
-                                    ? theme.colorScheme.primary
-                                    : null,
-                              ),
+                          child: Container(
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? theme.colorScheme.primary.withAlpha(40)
+                                  : null,
+                              border: isToday
+                                  ? Border.all(
+                                      color: theme.colorScheme.primary,
+                                      width: 1.5,
+                                    )
+                                  : null,
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            if (hasCompleted || hasScheduled)
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (hasCompleted)
-                                    Container(
-                                      width: 5,
-                                      height: 5,
-                                      margin: const EdgeInsets.only(top: 2),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                    ),
-                                  if (hasCompleted && hasScheduled)
-                                    const SizedBox(width: 2),
-                                  if (hasScheduled)
-                                    Container(
-                                      width: 5,
-                                      height: 5,
-                                      margin: const EdgeInsets.only(top: 2),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: theme.colorScheme.tertiary,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                          ],
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '$dayIndex',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontWeight:
+                                        isSelected ? FontWeight.bold : null,
+                                    color: isSelected
+                                        ? theme.colorScheme.primary
+                                        : null,
+                                  ),
+                                ),
+                                if (hasCompleted || hasScheduled)
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      if (hasCompleted)
+                                        Container(
+                                          width: 5,
+                                          height: 5,
+                                          margin: const EdgeInsets.only(top: 2),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                        ),
+                                      if (hasCompleted && hasScheduled)
+                                        const SizedBox(width: 2),
+                                      if (hasScheduled)
+                                        Container(
+                                          width: 5,
+                                          height: 5,
+                                          margin: const EdgeInsets.only(top: 2),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: theme.colorScheme.tertiary,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
