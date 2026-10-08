@@ -113,6 +113,7 @@ class _MonthHeader extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
+            tooltip: 'Previous month',
             icon: const Icon(Icons.chevron_left),
             onPressed: onPrevious,
           ),
@@ -123,6 +124,7 @@ class _MonthHeader extends StatelessWidget {
                 ),
           ),
           IconButton(
+            tooltip: 'Next month',
             icon: const Icon(Icons.chevron_right),
             onPressed: onNext,
           ),
@@ -197,65 +199,15 @@ class _CalendarGrid extends StatelessWidget {
                   final hasScheduled =
                       sessions?.any((s) => s.isScheduled) ?? false;
 
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => onDateSelected(date),
-                      child: Container(
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? theme.colorScheme.primary.withAlpha(40)
-                              : null,
-                          border: isToday
-                              ? Border.all(
-                                  color: theme.colorScheme.primary, width: 1.5)
-                              : null,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              '$dayIndex',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                fontWeight:
-                                    isSelected ? FontWeight.bold : null,
-                                color: isSelected
-                                    ? theme.colorScheme.primary
-                                    : null,
-                              ),
-                            ),
-                            if (hasCompleted || hasScheduled)
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (hasCompleted)
-                                    Container(
-                                      width: 5,
-                                      height: 5,
-                                      margin: const EdgeInsets.only(top: 2),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                    ),
-                                  if (hasCompleted && hasScheduled)
-                                    const SizedBox(width: 2),
-                                  if (hasScheduled)
-                                    Container(
-                                      width: 5,
-                                      height: 5,
-                                      margin: const EdgeInsets.only(top: 2),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: theme.colorScheme.tertiary,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                          ],
-                        ),
-                      ),
+                                    return Expanded(
+                    child: _DayCell(
+                      date: date,
+                      dayIndex: dayIndex,
+                      isSelected: isSelected,
+                      isToday: isToday,
+                      hasCompleted: hasCompleted,
+                      hasScheduled: hasScheduled,
+                      onDateSelected: onDateSelected,
                     ),
                   );
                 }),
@@ -401,6 +353,97 @@ class _CalendarSessionTile extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _DayCell extends StatelessWidget {
+  final DateTime date;
+  final int dayIndex;
+  final bool isSelected;
+  final bool isToday;
+  final bool hasCompleted;
+  final bool hasScheduled;
+  final ValueChanged<DateTime> onDateSelected;
+
+  const _DayCell({
+    required this.date,
+    required this.dayIndex,
+    required this.isSelected,
+    required this.isToday,
+    required this.hasCompleted,
+    required this.hasScheduled,
+    required this.onDateSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    final semanticLabel = StringBuffer();
+    semanticLabel.write('${date.month}/${date.day}/${date.year}');
+    if (isSelected) semanticLabel.write(', selected');
+    if (isToday) semanticLabel.write(', today');
+    if (hasCompleted) semanticLabel.write(', completed session');
+    if (hasScheduled) semanticLabel.write(', scheduled session');
+
+    return Semantics(
+      label: semanticLabel.toString(),
+      selected: isSelected,
+      button: true,
+      child: InkWell(
+        onTap: () => onDateSelected(date),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: isSelected ? theme.colorScheme.primary.withAlpha(40) : null,
+            border: isToday
+                ? Border.all(color: theme.colorScheme.primary, width: 1.5)
+                : null,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '$dayIndex',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: isSelected ? FontWeight.bold : null,
+                  color: isSelected ? theme.colorScheme.primary : null,
+                ),
+              ),
+              if (hasCompleted || hasScheduled)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (hasCompleted)
+                      Container(
+                        width: 5,
+                        height: 5,
+                        margin: const EdgeInsets.only(top: 2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    if (hasCompleted && hasScheduled) const SizedBox(width: 2),
+                    if (hasScheduled)
+                      Container(
+                        width: 5,
+                        height: 5,
+                        margin: const EdgeInsets.only(top: 2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: theme.colorScheme.tertiary,
+                        ),
+                      ),
+                  ],
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
