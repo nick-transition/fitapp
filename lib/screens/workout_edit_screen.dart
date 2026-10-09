@@ -47,6 +47,23 @@ class _WorkoutEditScreenState extends State<WorkoutEditScreen> {
     });
   }
 
+  Exercise _updateExercise(Exercise ex, {String? name, int? sets, String? videoUrl}) {
+    return Exercise(
+      id: ex.id,
+      name: name ?? ex.name,
+      sets: sets ?? ex.sets,
+      reps: ex.reps,
+      weight: ex.weight,
+      durationSeconds: ex.durationSeconds,
+      restSeconds: ex.restSeconds,
+      notes: ex.notes,
+      order: ex.order,
+      tags: ex.tags,
+      videoUrl: videoUrl ?? ex.videoUrl,
+      libraryExerciseId: ex.libraryExerciseId,
+    );
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -205,16 +222,9 @@ class _WorkoutEditScreenState extends State<WorkoutEditScreen> {
                     initialValue: ex.name,
                     decoration: const InputDecoration(hintText: 'Exercise Name', isDense: true),
                     onChanged: (v) {
-                      _exercises[index] = Exercise(
-                        id: ex.id,
-                        name: v,
-                        sets: ex.sets,
-                        reps: ex.reps,
-                        weight: ex.weight,
-                        notes: ex.notes,
-                        videoUrl: ex.videoUrl,
-                        order: ex.order,
-                      );
+                      setState(() {
+                        _exercises[index] = _updateExercise(ex, name: v);
+                      });
                     },
                   ),
                 ),
@@ -226,16 +236,9 @@ class _WorkoutEditScreenState extends State<WorkoutEditScreen> {
                     decoration: const InputDecoration(hintText: 'Sets', isDense: true),
                     keyboardType: TextInputType.number,
                     onChanged: (v) {
-                      _exercises[index] = Exercise(
-                        id: ex.id,
-                        name: ex.name,
-                        sets: int.tryParse(v) ?? 0,
-                        reps: ex.reps,
-                        weight: ex.weight,
-                        notes: ex.notes,
-                        videoUrl: ex.videoUrl,
-                        order: ex.order,
-                      );
+                      setState(() {
+                        _exercises[index] = _updateExercise(ex, sets: int.tryParse(v) ?? 0);
+                      });
                     },
                   ),
                 ),
@@ -272,16 +275,7 @@ class _WorkoutEditScreenState extends State<WorkoutEditScreen> {
           TextButton(
             onPressed: () {
               setState(() {
-                _exercises[index] = Exercise(
-                  id: ex.id,
-                  name: ex.name,
-                  sets: ex.sets,
-                  reps: ex.reps,
-                  weight: ex.weight,
-                  notes: ex.notes,
-                  videoUrl: controller.text,
-                  order: ex.order,
-                );
+                _exercises[index] = _updateExercise(ex, videoUrl: controller.text);
               });
               Navigator.pop(context);
             },
