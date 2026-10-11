@@ -1,16 +1,16 @@
 # FitApp Roadmap
 
-Last updated: April 2026
+Last updated: October 2026
 
 ## Now — Security & Stability
 
 Harden the foundation before scaling users.
 
 - [ ] **HTTP referrer restrictions on Firebase API keys** ([#30](https://github.com/nick-transition/fitapp/issues/30))
-- [ ] **OAuth redirect_uri validation** ([#6](https://github.com/nick-transition/fitapp/issues/6))
-- [ ] **Access token expiry** ([#7](https://github.com/nick-transition/fitapp/issues/7))
-- [ ] **Timing-safe secret comparison** ([#8](https://github.com/nick-transition/fitapp/issues/8))
-- [ ] **Strip MCP debug toolkit from production builds** ([#9](https://github.com/nick-transition/fitapp/issues/9))
+- [x] **OAuth redirect_uri validation** ([#6](https://github.com/nick-transition/fitapp/issues/6), addressed in OAuth 2.1 overhaul via [#68](https://github.com/nick-transition/fitapp/pull/68))
+- [x] **Access token expiry** ([#7](https://github.com/nick-transition/fitapp/issues/7), 1h tokens + rotating refresh tokens shipped in [#68](https://github.com/nick-transition/fitapp/pull/68))
+- [x] **Timing-safe secret comparison** ([#8](https://github.com/nick-transition/fitapp/issues/8), public PKCE S256 client auth superseded secret checks in [#68](https://github.com/nick-transition/fitapp/pull/68))
+- [x] **Strip MCP debug toolkit from production builds** ([#9](https://github.com/nick-transition/fitapp/issues/9), stripped in web builds via [#35](https://github.com/nick-transition/fitapp/pull/35))
 - [x] Stripe test/prod separation with live webhook endpoint
 - [x] Inline YouTube videos on athlete detail screen ([#2](https://github.com/nick-transition/fitapp/issues/2))
 - [x] E2E test harness with Playwright + screenshot capture
