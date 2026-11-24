@@ -87,7 +87,7 @@ export const mcp = onRequest(
         res.status(401).json({ error: message });
       } else {
         console.error('MCP server error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: message });
       }
     }
   }
